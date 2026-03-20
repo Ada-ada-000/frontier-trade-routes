@@ -1,0 +1,537 @@
+:root {
+  --bg: #071018;
+  --bg-strong: #03070c;
+  --panel: rgba(12, 24, 33, 0.84);
+  --panel-soft: rgba(18, 36, 47, 0.92);
+  --line: rgba(160, 198, 211, 0.16);
+  --text: #edf5f7;
+  --muted: #8fa7b1;
+  --accent: #a6f3c0;
+  --accent-strong: #57cf94;
+  --warning: #f4c46f;
+  --danger: #ff8e72;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background:
+    radial-gradient(circle at top left, rgba(87, 207, 148, 0.12), transparent 25%),
+    radial-gradient(circle at top right, rgba(113, 171, 255, 0.08), transparent 28%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-strong) 100%);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+ol,
+ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+dt,
+dd {
+  margin: 0;
+}
+
+.app-frame {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 20px 0 56px;
+}
+
+.topbar,
+.brand-block,
+.nav,
+.wallet-panel,
+.wallet-copy,
+.section-head,
+.opportunity-head,
+.detail-row,
+.contract-row,
+.action-row,
+.hero-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.topbar,
+.section-head,
+.detail-row,
+.contract-row {
+  justify-content: space-between;
+}
+
+.topbar {
+  padding: 10px 0 24px;
+  flex-wrap: wrap;
+}
+
+.brand-link {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.brand-link p,
+.wallet-copy p,
+.muted,
+.contract-row p,
+.opportunity-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.small-copy {
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.brand-mark {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(166, 243, 192, 0.25), rgba(87, 207, 148, 0.7));
+  color: #042214;
+  font-weight: 700;
+}
+
+.nav {
+  flex-wrap: wrap;
+}
+
+.nav-link,
+.subtle {
+  color: var(--muted);
+}
+
+.nav-link:hover {
+  color: var(--text);
+}
+
+.wallet-panel,
+.panel,
+.opportunity-card,
+.contract-row {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+}
+
+.wallet-panel {
+  padding: 10px 14px;
+  justify-content: space-between;
+}
+
+.wallet-panel button {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  padding: 10px 14px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--danger);
+}
+
+.status-dot.online {
+  background: var(--accent-strong);
+}
+
+.hero,
+.two-column,
+.three-up,
+.opportunity-grid,
+.score-grid,
+.detail-grid,
+.form-grid,
+.intel-summary-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.hero {
+  grid-template-columns: 1.3fr 0.9fr;
+  padding: 28px 0 20px;
+  align-items: stretch;
+}
+
+.hero-copy h1,
+.section-head h1,
+.section-head h2 {
+  margin: 0;
+}
+
+.hero-copy h1 {
+  font-size: clamp(3rem, 7vw, 5.8rem);
+  line-height: 0.96;
+  max-width: 9ch;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.74rem;
+}
+
+.lede {
+  margin: 0;
+  color: var(--text);
+  max-width: 26ch;
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+
+.large {
+  max-width: 60ch;
+  line-height: 1.7;
+}
+
+.trade-market-grid {
+  align-items: start;
+}
+
+.trade-order-card,
+.trade-heatmap-panel,
+.trade-modal {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+}
+
+.trade-order-card,
+.trade-heatmap-panel {
+  padding: 20px;
+}
+
+.trade-order-top,
+.trade-order-grid,
+.trade-order-footer,
+.trade-legend-row,
+.trade-field {
+  display: flex;
+  gap: 14px;
+}
+
+.trade-order-top,
+.trade-order-footer,
+.trade-legend-row {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trade-order-card h3,
+.trade-modal h3 {
+  margin: 0;
+}
+
+.trade-order-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.trade-order-grid dt,
+.trade-field span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.trade-order-grid dd {
+  margin: 6px 0 0;
+}
+
+.trade-heatmap-wrap {
+  height: 280px;
+}
+
+.trade-heatmap-legend {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.trade-legend-chip {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.trade-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 7, 11, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 40;
+}
+
+.trade-modal {
+  width: min(560px, 100%);
+  padding: 22px;
+}
+
+.trade-field {
+  flex-direction: column;
+}
+
+.trade-field input,
+.trade-field select {
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  padding: 12px 14px;
+}
+
+.subtle-button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.stat-card {
+  padding: 12px 16px;
+}
+
+@media (max-width: 900px) {
+  .trade-order-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .trade-order-grid,
+  .hero,
+  .two-column {
+    grid-template-columns: 1fr;
+  }
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+}
+
+.button.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  border-color: transparent;
+  color: #072313;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.page-stack,
+.stack {
+  display: grid;
+  gap: 18px;
+}
+
+.panel {
+  padding: 24px;
+}
+
+.three-up {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.highlight {
+  min-height: 112px;
+}
+
+.opportunity-grid,
+.two-column {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.opportunity-card {
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.opportunity-head {
+  justify-content: space-between;
+}
+
+.score-chip,
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+}
+
+.score-grid,
+.detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.score-grid div,
+.detail-row {
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.score-grid dt,
+.detail-row dt {
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.formula-box,
+.feedback {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  background: rgba(18, 36, 47, 0.65);
+}
+
+.intel-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.stat-card {
+  min-height: 136px;
+}
+
+.stat-card strong {
+  font-size: 1.75rem;
+  line-height: 1.1;
+}
+
+.contract-table {
+  display: grid;
+  gap: 14px;
+}
+
+.region-status-list,
+.event-feed {
+  display: grid;
+  gap: 16px;
+}
+
+.status-card,
+.event-card {
+  padding: 20px;
+}
+
+.contract-row {
+  padding: 18px 20px;
+}
+
+.form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.form-grid input,
+.form-grid select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(5, 12, 17, 0.82);
+  color: var(--text);
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.action-row {
+  flex-wrap: wrap;
+}
+
+.feedback.success {
+  border-color: rgba(87, 207, 148, 0.35);
+}
+
+.feedback.error {
+  border-color: rgba(255, 142, 114, 0.4);
+}
+
+.feedback a {
+  color: var(--accent);
+}
+
+.ordered {
+  display: grid;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .hero,
+  .two-column,
+  .three-up,
+  .opportunity-grid,
+  .score-grid,
+  .detail-grid,
+  .form-grid,
+  .intel-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-frame {
+    width: min(100%, calc(100% - 24px));
+  }
+}

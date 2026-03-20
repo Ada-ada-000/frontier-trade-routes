@@ -1,0 +1,9 @@
+[package]
+name = "trade_routes"
+edition = "2024.beta"
+
+[dependencies]
+Sui = { local = "/Users/dby/.move/https___github_com_MystenLabs_sui_git_framework__mainnet/crates/sui-framework/packages/sui-framework" }
+
+[addresses]
+trade_routes = "0x0"

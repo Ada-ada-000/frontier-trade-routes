@@ -1,0 +1,13 @@
+{
+  "name": "frontier-trade-routes",
+  "private": true,
+  "packageManager": "pnpm@10.8.1",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm --filter web lint",
+    "typecheck": "pnpm -r typecheck",
+    "move:build": "cd contracts/trade_routes && sui move build",
+    "simulate:trade-routes": "node scripts/simulate-trade-routes.mjs"
+  }
+}
