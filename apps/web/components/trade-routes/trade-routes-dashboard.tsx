@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useState } from "react";
+import { startTransition, useMemo, useState } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { HeatmapLayer } from "./heatmap-layer";
 import { OrderCard } from "./order-card";
@@ -8,58 +8,96 @@ import { StakeModal } from "./stake-modal";
 import { useTradeRoutes } from "../../lib/trade-routes/use-trade-routes";
 import type { OrderPublicView } from "../../lib/trade-routes/types";
 
+function sumStake(orders: OrderPublicView[]) {
+  return orders.reduce((total, order) => total + Number(order.requiredStakeMist), 0);
+}
+
 export function TradeRoutesDashboard() {
   const account = useCurrentAccount();
   const tradeRoutes = useTradeRoutes();
   const [selectedOrder, setSelectedOrder] = useState<OrderPublicView | undefined>();
 
+  const metrics = useMemo(() => {
+    const openOrders = tradeRoutes.orders.filter((order) => order.status === "open").length;
+    const insured = tradeRoutes.orders.filter((order) => order.insured).length;
+    const totalStake = sumStake(tradeRoutes.orders) / 1_000_000_000;
+
+    return { openOrders, insured, totalStake };
+  }, [tradeRoutes.orders]);
+
   return (
     <>
-      <section className="hero">
-        <div className="hero-copy">
-          <p className="eyebrow">EVE Frontier × Sui</p>
-          <h1>Frontier Trade Routes</h1>
-          <p className="lede">
-            A staged logistics market: public discovery stays fuzzy, seller access becomes precise only after onchain commitment.
-          </p>
-          <p className="muted large">
-            Weighted bidding, mandatory stake locking, insurance-backed recovery, and staged reveal reduce route leakage without relying on official live coordinates.
-          </p>
-          <div className="hero-actions">
-            <div className="panel stat-card">
-              <strong>{tradeRoutes.mode.toUpperCase()}</strong>
-              <p className="muted">Execution mode</p>
-            </div>
-            <div className="panel stat-card">
-              <strong>{tradeRoutes.orders.length}</strong>
-              <p className="muted">Visible fuzzy orders</p>
-            </div>
+      <section className="dashboard-hero panel stack">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Tactical Logistics Grid</p>
+            <h1>Fuzzy intel, weighted bidding, staged route reveal.</h1>
           </div>
+          <div className="hero-badge">App / Control Surface</div>
         </div>
-        <div className="panel stack">
-          <p className="eyebrow">Access rules</p>
-          <ol className="ordered">
-            <li>Open market shows only fuzzy region blocks.</li>
-            <li>`accept_order` locks stake before any precise route disclosure.</li>
-            <li>Pickup reveal happens at assignment, destination reveal after `confirm_pickup`.</li>
-            <li>Insurance and slashing resolve failure without exposing public coordinates.</li>
-          </ol>
+        <p className="hero-lede">
+          Frontier Trade Routes is a hardened logistics and intel terminal. Public discovery stays
+          blurred, stake commitment unlocks staged visibility, and reputation plus insurance reduce
+          bad delivery flow.
+        </p>
+        <div className="metric-grid">
+          <article className="metric-card">
+            <p className="eyebrow">Execution</p>
+            <strong>{tradeRoutes.mode.toUpperCase()}</strong>
+            <span>{tradeRoutes.mode === "sui" ? "Live order rail" : "Mock relay active"}</span>
+          </article>
+          <article className="metric-card">
+            <p className="eyebrow">Open queue</p>
+            <strong>{metrics.openOrders}</strong>
+            <span>Seller-visible assignments</span>
+          </article>
+          <article className="metric-card">
+            <p className="eyebrow">Stake pressure</p>
+            <strong>{metrics.totalStake.toFixed(0)} SUI</strong>
+            <span>Capital currently requested</span>
+          </article>
+          <article className="metric-card">
+            <p className="eyebrow">Insured</p>
+            <strong>{metrics.insured}</strong>
+            <span>Orders under recovery pool</span>
+          </article>
+        </div>
+        <div className="rule-strip">
+          <span>Fuzzy Heatmap</span>
+          <span>Weighted Bidding Pool</span>
+          <span>Staged Reveal</span>
+          <span id="reputation">Reputation</span>
+          <span id="insurance">Insurance</span>
         </div>
       </section>
 
-      <main className="page-stack">
-        <div className="two-column trade-market-grid">
-          <HeatmapLayer data={tradeRoutes.heatmap} />
-          <section className="panel stack">
-            <div className="section-head">
-              <div>
-                <p className="eyebrow">Weighted bidding pool</p>
-                <h2>Seller-visible queue</h2>
-              </div>
-              <button type="button" className="subtle-button" onClick={() => void tradeRoutes.refresh()}>
-                Refresh
-              </button>
+      <div className="dashboard-grid">
+        <HeatmapLayer data={tradeRoutes.heatmap} />
+        <section className="panel stack">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Order market</p>
+              <h2>Seller-visible route queue</h2>
             </div>
+            <button type="button" className="button secondary" onClick={() => void tradeRoutes.refresh()}>
+              Refresh Queue
+            </button>
+          </div>
+          <div className="meta-strip">
+            <div className="meta-chip">
+              <span className="eyebrow">Wallet</span>
+              <strong>{account ? "Ready" : "Not linked"}</strong>
+            </div>
+            <div className="meta-chip">
+              <span className="eyebrow">Coord Precision</span>
+              <strong>Staged / Hidden</strong>
+            </div>
+            <div className="meta-chip">
+              <span className="eyebrow">Insurance Model</span>
+              <strong>Mutual Pool</strong>
+            </div>
+          </div>
+          <div className="order-stack">
             {tradeRoutes.orders.map((order) => (
               <OrderCard
                 key={order.orderId}
@@ -70,9 +108,9 @@ export function TradeRoutesDashboard() {
                 }}
               />
             ))}
-          </section>
-        </div>
-      </main>
+          </div>
+        </section>
+      </div>
 
       <StakeModal
         open={Boolean(selectedOrder)}

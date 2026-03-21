@@ -45,62 +45,90 @@ export function StakeModal({
   const eligibleCoins = coins.filter((coin) => BigInt(coin.balanceMist) >= BigInt(order.requiredStakeMist));
 
   return (
-    <div className="trade-modal-backdrop" role="presentation" onClick={onClose}>
-      <div className="trade-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-        <div className="trade-order-top">
+    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+      <div className="modal-panel" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+        <div className="section-head">
           <div>
-            <p className="eyebrow">Lock stake</p>
-            <h3>Accept fuzzy order #{order.orderId}</h3>
+            <p className="eyebrow">Execution lock</p>
+            <h3>Accept route order #{order.orderId}</h3>
           </div>
-          <button type="button" className="subtle-button" onClick={onClose}>
+          <button type="button" className="button secondary" onClick={onClose}>
             Close
           </button>
         </div>
 
-        <div className="stack">
-          <label className="trade-field">
-            <span>Quoted price (mist)</span>
+        <div className="modal-summary">
+          <div className="side-block">
+            <span className="eyebrow">Cargo</span>
+            <strong>{order.cargoHint}</strong>
+          </div>
+          <div className="side-block">
+            <span className="eyebrow">Route</span>
+            <strong>
+              {order.originFuzzy} → {order.destinationFuzzy}
+            </strong>
+          </div>
+          <div className="side-block">
+            <span className="eyebrow">Reward ceiling</span>
+            <strong>{formatMist(order.rewardBudgetMist)}</strong>
+          </div>
+          <div className="side-block">
+            <span className="eyebrow">Stake requirement</span>
+            <strong>{formatMist(order.requiredStakeMist)}</strong>
+          </div>
+        </div>
+
+        <div className="modal-form">
+          <label className="modal-field">
+            <span className="eyebrow">Quoted price (mist)</span>
             <input
               value={quotedPriceMist}
               onChange={(event) => setQuotedPriceMist(event.target.value)}
               inputMode="numeric"
             />
           </label>
-          <label className="trade-field">
-            <span>Stake coin object</span>
+          <label className="modal-field">
+            <span className="eyebrow">Stake coin object</span>
             <select value={stakeCoinObjectId} onChange={(event) => setStakeCoinObjectId(event.target.value)}>
-              <option value="">Select an eligible coin</option>
+              <option value="">Select eligible wallet coin</option>
               {eligibleCoins.map((coin) => (
                 <option key={coin.objectId} value={coin.objectId}>
-                  {coin.objectId.slice(0, 12)}... · {formatMist(coin.balanceMist)}
+                  {coin.objectId.slice(0, 12)}... / {formatMist(coin.balanceMist)}
                 </option>
               ))}
             </select>
           </label>
-          <p className="muted small-copy">
-            Required stake: {formatMist(order.requiredStakeMist)}. Exact pickup or destination stays hidden in
-            public UI until the staged reveal checks pass onchain.
-          </p>
-          {error ? <div className="feedback error">{error}</div> : null}
-          <div className="hero-actions">
-            <button type="button" className="button secondary" onClick={onClose}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="button primary"
-              disabled={busy || !stakeCoinObjectId || !quotedPriceMist}
-              onClick={() =>
-                onConfirm({
-                  orderId: order.orderId,
-                  quotedPriceMist,
-                  stakeCoinObjectId,
-                })
-              }
-            >
-              {busy ? "Submitting..." : "Submit accept_order"}
-            </button>
-          </div>
+        </div>
+
+        <div className="risk-panel">
+          <p className="eyebrow">Risk Notice</p>
+          <ul className="sequence-list compact">
+            <li>Stake locks before command execution completes.</li>
+            <li>Coordinates remain staged and are not fully revealed in public view.</li>
+            <li>Insurance and slashing may apply depending on fulfillment outcome.</li>
+          </ul>
+        </div>
+
+        {error ? <div className="feedback error">{error}</div> : null}
+
+        <div className="modal-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Abort
+          </button>
+          <button
+            type="button"
+            className="button primary"
+            disabled={busy || !stakeCoinObjectId || !quotedPriceMist}
+            onClick={() =>
+              onConfirm({
+                orderId: order.orderId,
+                quotedPriceMist,
+                stakeCoinObjectId,
+              })
+            }
+          >
+            {busy ? "Submitting..." : "Execute accept_order"}
+          </button>
         </div>
       </div>
     </div>

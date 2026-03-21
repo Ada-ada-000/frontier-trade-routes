@@ -3,7 +3,7 @@
 import { Cell, ResponsiveContainer, Tooltip, Treemap } from "recharts";
 import type { HeatmapTile } from "../../lib/trade-routes/types";
 
-const palette = ["#173342", "#1f5564", "#2b7c7f", "#46a388", "#87cd93"];
+const palette = ["#242733", "#47321c", "#8f4612", "#c95b12", "#f97316"];
 
 function colorForIntensity(value: number) {
   if (value >= 85) {
@@ -23,51 +23,66 @@ function colorForIntensity(value: number) {
 
 export function HeatmapLayer({ data }: { data: HeatmapTile[] }) {
   return (
-    <div className="trade-heatmap-panel">
+    <section className="panel heatmap-panel">
       <div className="section-head">
         <div>
           <p className="eyebrow">Fuzzy heatmap</p>
-          <h2>Regional pressure only</h2>
+          <h2>Regional logistics pressure</h2>
         </div>
-        <p className="muted narrow">No exact station or system coordinates are exposed here.</p>
+        <div className="panel-copy">
+          <strong>Region-level only</strong>
+          <span>No exact system coordinates exposed</span>
+        </div>
       </div>
-      <div className="trade-heatmap-wrap">
-        <ResponsiveContainer width="100%" height={280}>
+
+      <div className="heatmap-chart">
+        <ResponsiveContainer width="100%" height={320}>
           <Treemap
             data={data.map((item) => ({ ...item, size: Math.max(item.intensity, 12) }))}
             dataKey="size"
             stroke="rgba(255,255,255,0.08)"
-            fill="#1f5564"
-            content={<div />}
+            fill="#242733"
           >
             {data.map((item) => (
               <Cell key={item.region} fill={colorForIntensity(item.intensity)} />
             ))}
             <Tooltip
               contentStyle={{
-                background: "rgba(4, 11, 17, 0.96)",
-                border: "1px solid rgba(160, 198, 211, 0.18)",
-                borderRadius: 16,
+                background: "rgba(10, 10, 16, 0.96)",
+                border: "1px solid rgba(249, 115, 22, 0.25)",
+                borderRadius: 12,
+                boxShadow: "0 20px 40px rgba(0, 0, 0, 0.45)",
               }}
               formatter={(value, _name, payload) => {
                 const intensity = typeof value === "number" ? value : Number(value ?? 0);
                 const region = String(payload?.payload?.region ?? "Unknown");
                 const demandCount = Number(payload?.payload?.demandCount ?? 0);
-                return [`${intensity} intensity · ${demandCount} orders`, region];
+                const insuredCount = Number(payload?.payload?.insuredCount ?? 0);
+                return [`${intensity} pressure / ${demandCount} orders / ${insuredCount} insured`, region];
               }}
             />
           </Treemap>
         </ResponsiveContainer>
       </div>
-      <div className="trade-heatmap-legend">
-        {data.slice(0, 5).map((item) => (
-          <div key={item.region} className="trade-legend-row">
-            <span className="trade-legend-chip" style={{ backgroundColor: colorForIntensity(item.intensity) }} />
-            <strong>{item.region}</strong>
-            <span className="muted">{item.intensity}</span>
-          </div>
-        ))}
+
+      <div className="heatmap-legend">
+        <div className="legend-header">
+          <span className="eyebrow">Tactical legend</span>
+          <span className="eyebrow">Pressure / density / insurance</span>
+        </div>
+        <div className="legend-list">
+          {data.slice(0, 6).map((item) => (
+            <div key={item.region} className="legend-row">
+              <span className="legend-chip" style={{ backgroundColor: colorForIntensity(item.intensity) }} />
+              <div className="legend-copy">
+                <strong>{item.region}</strong>
+                <span>{item.demandCount} orders / {item.urgentCount} urgent / {item.insuredCount} insured</span>
+              </div>
+              <span className="legend-value">{item.intensity}</span>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

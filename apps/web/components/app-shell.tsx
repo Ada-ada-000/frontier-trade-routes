@@ -1,41 +1,26 @@
-import type { ReactNode } from "react";
-import Link from "next/link";
-import { WalletPanel } from "./wallet-panel";
+ "use client";
 
-const links = [
-  { href: "/", label: "Overview" },
-  { href: "/opportunities", label: "Opportunities" },
-  { href: "/contracts", label: "Contracts" },
-];
+import type { ReactNode } from "react";
+import { useState } from "react";
+import { Footer } from "./footer";
+import { Sidebar } from "./sidebar";
+import { TopNav } from "./top-nav";
 
 export function AppShell({
   children,
-  accent,
 }: {
   children: ReactNode;
-  accent?: ReactNode;
 }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <div className="app-frame">
-      <header className="topbar">
-        <Link href="/" className="brand-link">
-          <span className="brand-mark">FT</span>
-          <div className="brand-block">
-            <strong>Frontier Trade Routes</strong>
-            <p>Trusted frontier intel for player trade coordination.</p>
-          </div>
-        </Link>
-        <nav className="nav">
-          {links.map((link) => (
-            <Link key={link.href} href={link.href} className="nav-link">
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-        <WalletPanel />
-      </header>
-      {accent}
-      {children}
+    <div className="app-shell">
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="app-shell__main">
+        <TopNav compact onMenuToggle={() => setSidebarOpen((current) => !current)} />
+        <main className="app-shell__content">{children}</main>
+        <Footer />
+      </div>
     </div>
   );
 }
