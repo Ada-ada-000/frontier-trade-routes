@@ -18,8 +18,9 @@ export function OpportunityBoard({ opportunities }: { opportunities: Opportunity
           <article key={opportunity.id} className="opportunity-card">
             <div className="opportunity-head">
               <div>
+                <p className="eyebrow">Regional opportunity</p>
                 <strong>{opportunity.regionName}</strong>
-                <p>{opportunity.resourceName}</p>
+                <p className="opportunity-subtitle">{opportunity.resourceName}</p>
               </div>
               <span className="score-chip">{opportunity.opportunityScore}</span>
             </div>
@@ -42,13 +43,14 @@ export function OpportunityBoard({ opportunities }: { opportunities: Opportunity
                 <dd>{opportunity.adjustment}</dd>
               </div>
             </dl>
+            <div className="recommend-band">
+              <span className="eyebrow">Suggested action</span>
+              <strong>{contractTypeLabels[recommendedContractType(opportunity)]}</strong>
+            </div>
             <div className="card-actions">
-              <span className="subtle">
-                Suggested action: {contractTypeLabels[recommendedContractType(opportunity)]}
-              </span>
               <Link
                 href={`/contracts?type=${recommendedContractType(opportunity)}&resource=${encodeURIComponent(opportunity.resourceName)}&region=${encodeURIComponent(opportunity.regionName)}`}
-                className="button secondary"
+                className="button primary"
               >
                 Create contract
               </Link>

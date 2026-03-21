@@ -19,15 +19,15 @@ export function IntelEventFeed({ events }: { events: IntelEvent[] }) {
       </div>
       <div className="event-feed">
         {events.map((event) => (
-          <article key={event.id} className="panel event-card">
-            <div className="section-head">
+          <article key={event.id} className="event-card">
+            <div className="opportunity-head">
               <div>
                 <p className="eyebrow">{intelEventLabels[event.type]}</p>
                 <strong>{event.title}</strong>
+                <p className="opportunity-subtitle">{event.summary}</p>
               </div>
               <span className="status-pill">{riskLevelLabels[event.riskLevel]}</span>
             </div>
-            <p className="muted">{event.summary}</p>
             <dl className="score-grid">
               <div>
                 <dt>Region</dt>
@@ -51,12 +51,20 @@ export function IntelEventFeed({ events }: { events: IntelEvent[] }) {
               </div>
             </dl>
             <p className="muted small-copy">{describePrivacy(event.privacy)}</p>
+            <div className="recommend-band">
+              <span className="eyebrow">Recommended contract</span>
+              <strong>
+                {event.recommendedContractType
+                  ? contractTypeLabels[event.recommendedContractType]
+                  : "OBSERVE"}
+              </strong>
+            </div>
             <div className="card-actions">
               <span className="subtle">{new Date(event.timestamp).toLocaleString()}</span>
               {event.recommendedContractType && event.resourceName ? (
                 <Link
                   href={`/contracts?type=${event.recommendedContractType}&resource=${encodeURIComponent(event.resourceName)}&region=${encodeURIComponent(event.regionName)}`}
-                  className="button secondary"
+                  className="button primary"
                 >
                   Create contract
                 </Link>

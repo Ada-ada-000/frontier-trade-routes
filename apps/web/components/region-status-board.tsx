@@ -38,11 +38,12 @@ export function RegionStatusBoard({
               : "procure";
 
           return (
-            <article key={region.id} className="panel status-card">
-              <div className="section-head">
+            <article key={region.id} className="status-card">
+              <div className="opportunity-head">
                 <div>
+                  <p className="eyebrow">Region status</p>
                   <strong>{region.regionName}</strong>
-                  <p className="muted">{region.summary}</p>
+                  <p className="opportunity-subtitle">{region.summary}</p>
                 </div>
                 <span className="status-pill">{riskLevelLabels[region.securityLevel]}</span>
               </div>
@@ -61,18 +62,18 @@ export function RegionStatusBoard({
                 </div>
                 <div>
                   <dt>Fleet activity</dt>
-                  <dd>{region.fleetActivity}</dd>
-                </div>
+                <dd>{region.fleetActivity}</dd>
+              </div>
               </dl>
               <p className="muted small-copy">{describePrivacy(region.privacy)}</p>
+              <div className="recommend-band">
+                <span className="eyebrow">Recommended contract</span>
+                <strong>{contractTypeLabels[suggestedType]}</strong>
+              </div>
               <div className="card-actions">
-                <div>
-                  <p className="subtle">Recommended contract</p>
-                  <strong>{contractTypeLabels[suggestedType]}</strong>
-                </div>
                 <Link
                   href={`/contracts?type=${suggestedType}&resource=${encodeURIComponent(region.dominantResource)}&region=${encodeURIComponent(region.regionName)}`}
-                  className="button secondary"
+                  className="button primary"
                 >
                   Create contract
                 </Link>
