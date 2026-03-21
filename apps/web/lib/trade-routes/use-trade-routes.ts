@@ -3,7 +3,7 @@
 import { useDeferredValue } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { SuiMoveObject, SuiObjectResponse } from "@mysten/sui/client";
+import type { SuiObjectResponse, SuiParsedData } from "@mysten/sui/jsonRpc";
 import { Transaction } from "@mysten/sui/transactions";
 import {
   mockHeatmapTiles,
@@ -75,7 +75,7 @@ function asMoveFields(object: SuiObjectResponse) {
   if (!content || content.dataType !== "moveObject") {
     return null;
   }
-  return (content as SuiMoveObject).fields as Record<string, unknown>;
+  return (content as Extract<SuiParsedData, { dataType: "moveObject" }>).fields as Record<string, unknown>;
 }
 
 function parseOrderObject(object: SuiObjectResponse): OrderPublicView | null {

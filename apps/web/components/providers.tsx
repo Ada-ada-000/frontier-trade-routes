@@ -7,13 +7,13 @@ import {
   SuiClientProvider,
   WalletProvider,
 } from "@mysten/dapp-kit";
-import { getFullnodeUrl } from "@mysten/sui/client";
+import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
 import { TradeRoutesProvider } from "../lib/trade-routes-context";
 
 const { networkConfig } = createNetworkConfig({
-  devnet: { url: getFullnodeUrl("devnet") },
-  testnet: { url: getFullnodeUrl("testnet") },
-  mainnet: { url: getFullnodeUrl("mainnet") },
+  devnet: { network: "devnet", url: getJsonRpcFullnodeUrl("devnet") },
+  testnet: { network: "testnet", url: getJsonRpcFullnodeUrl("testnet") },
+  mainnet: { network: "mainnet", url: getJsonRpcFullnodeUrl("mainnet") },
 });
 
 export function Providers({ children }: { children: ReactNode }) {

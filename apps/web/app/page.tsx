@@ -1,7 +1,93 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { TopNav } from "../components/top-nav";
 
+type LandingTabId = "heatmap" | "bidding" | "reveal" | "risk";
+
+const landingTabs: {
+  id: LandingTabId;
+  label: string;
+  eyebrow: string;
+  title: string;
+  body: string;
+  bullets: string[];
+  primaryHref: string;
+  primaryLabel: string;
+  secondaryHref: string;
+  secondaryLabel: string;
+}[] = [
+  {
+    id: "heatmap",
+    label: "Fuzzy Heatmap",
+    eyebrow: "Intel Surface",
+    title: "Regional heat only, never exact route coordinates.",
+    body: "Public discovery is intentionally blurred into regional demand pressure. Sellers and buyers can spot where activity is building without turning the UI into a live targeting feed.",
+    bullets: [
+      "Region-level signal density",
+      "No exact station or system disclosure",
+      "Useful for demand scouting before commitment",
+    ],
+    primaryHref: "/app",
+    primaryLabel: "Open Heatmap",
+    secondaryHref: "/opportunities",
+    secondaryLabel: "View Intel Feed",
+  },
+  {
+    id: "bidding",
+    label: "Weighted Bidding Pool",
+    eyebrow: "Market Access",
+    title: "Orders filter by reputation, stake, and delivery budget.",
+    body: "Urgent jobs resolve fast while competitive jobs let buyers select the best reputation-to-price outcome. Sellers only see assignments that match their current credibility and stake capacity.",
+    bullets: [
+      "Urgent first-lock fulfillment",
+      "Competitive buyer-side selection",
+      "Stake-gated seller eligibility",
+    ],
+    primaryHref: "/contracts",
+    primaryLabel: "View Orders",
+    secondaryHref: "/app",
+    secondaryLabel: "Open Queue",
+  },
+  {
+    id: "reveal",
+    label: "Staged Reveal",
+    eyebrow: "Route Security",
+    title: "Pickup reveals first. Destination unlocks after pickup proof.",
+    body: "The system does not release the full route on acceptance. Sellers commit stake, receive pickup visibility, and unlock destination details only after they confirm pickup onchain or in the demo flow.",
+    bullets: [
+      "Stage 1 pickup disclosure",
+      "Stage 2 destination disclosure",
+      "Reduces instant route leakage risk",
+    ],
+    primaryHref: "/app",
+    primaryLabel: "See Reveal Flow",
+    secondaryHref: "/contracts",
+    secondaryLabel: "Inspect Contract Flow",
+  },
+  {
+    id: "risk",
+    label: "Reputation + Insurance",
+    eyebrow: "Trust Layer",
+    title: "Reliability compounds upward. Failure triggers slashing and recovery.",
+    body: "Carrier performance changes future access. Buyers can insure tasks, the pool compensates failed deliveries, and the protocol recovers capital from the responsible seller stake.",
+    bullets: [
+      "Tier-based seller access",
+      "Slashing on fraud or failed runs",
+      "Buyer recovery through the mutual pool",
+    ],
+    primaryHref: "/app/reputation",
+    primaryLabel: "Open Reputation",
+    secondaryHref: "/app/insurance",
+    secondaryLabel: "Open Insurance",
+  },
+];
+
 export default function HomePage() {
+  const [activeTab, setActiveTab] = useState<LandingTabId>("heatmap");
+  const activePanel = landingTabs.find((tab) => tab.id === activeTab) ?? landingTabs[0];
+
   return (
     <div className="landing-page">
       <TopNav compact />
@@ -63,6 +149,54 @@ export default function HomePage() {
             <h2>Reputation + Insurance</h2>
             <p>Reliable carriers rise in tier while failed tasks trigger slashing and recovery.</p>
           </article>
+        </section>
+
+        <section className="landing-module panel">
+          <div className="landing-module__head">
+            <div>
+              <p className="eyebrow">Interactive Briefing</p>
+              <h2>Explore the four operating rules before entering the app.</h2>
+            </div>
+            <Link href="/app" className="button secondary">
+              Enter Console
+            </Link>
+          </div>
+
+          <div className="landing-tabs" role="tablist" aria-label="Frontier Trade Routes core mechanics">
+            {landingTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                className={`landing-tab${activeTab === tab.id ? " is-active" : ""}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="landing-detail" role="tabpanel" aria-live="polite">
+            <div className="landing-detail__copy">
+              <p className="eyebrow">{activePanel.eyebrow}</p>
+              <h3>{activePanel.title}</h3>
+              <p>{activePanel.body}</p>
+            </div>
+            <ul className="landing-detail__list">
+              {activePanel.bullets.map((bullet) => (
+                <li key={bullet}>{bullet}</li>
+              ))}
+            </ul>
+            <div className="landing-detail__actions">
+              <Link href={activePanel.primaryHref} className="button primary">
+                {activePanel.primaryLabel}
+              </Link>
+              <Link href={activePanel.secondaryHref} className="button secondary">
+                {activePanel.secondaryLabel}
+              </Link>
+            </div>
+          </div>
         </section>
 
         <section className="landing-brief">
