@@ -28,7 +28,7 @@ export function TradeRoutesDashboard() {
 
   return (
     <>
-      <section className="dashboard-hero panel stack">
+      <section className="dashboard-hero panel stack" id="overview">
         <div className="section-head">
           <div>
             <p className="eyebrow">Tactical Logistics Grid</p>
@@ -64,17 +64,17 @@ export function TradeRoutesDashboard() {
           </article>
         </div>
         <div className="rule-strip">
-          <span>Fuzzy Heatmap</span>
-          <span>Weighted Bidding Pool</span>
-          <span>Staged Reveal</span>
-          <span>Reputation</span>
-          <span>Insurance</span>
+          <Link href="/app#heatmap">Fuzzy Heatmap</Link>
+          <Link href="/app#bidding-pool">Weighted Bidding Pool</Link>
+          <Link href="/app#staged-reveal">Staged Reveal</Link>
+          <Link href="/app/reputation#reputation">Reputation</Link>
+          <Link href="/app/insurance#insurance">Insurance</Link>
         </div>
       </section>
 
       <div className="dashboard-grid">
         <HeatmapLayer data={tradeRoutes.heatmap} />
-        <section className="panel stack">
+        <section className="panel stack" id="bidding-pool">
           <div className="section-head">
             <div>
               <p className="eyebrow">Order market</p>
@@ -113,8 +113,62 @@ export function TradeRoutesDashboard() {
         </section>
       </div>
 
+      <section className="panel stack" id="staged-reveal">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Staged Reveal</p>
+            <h2>Route visibility unlocks in two controlled steps</h2>
+          </div>
+          <Link href="/contracts" className="button secondary">
+            Open Contract Flow
+          </Link>
+        </div>
+        <div className="timeline-grid">
+          <article className="table-card">
+            <div className="table-card__header">
+              <strong>01. Accept order</strong>
+              <span className="status-pill is-open">Stake locked</span>
+            </div>
+            <p className="muted">
+              Seller meets reputation and stake thresholds, then commits collateral before seeing
+              full delivery details.
+            </p>
+          </article>
+          <article className="table-card">
+            <div className="table-card__header">
+              <strong>02. Pickup revealed</strong>
+              <span className="status-pill is-assigned">Stage one</span>
+            </div>
+            <p className="muted">
+              Only the pickup location becomes visible after acceptance, so the route cannot be
+              leaked in full at the moment of assignment.
+            </p>
+          </article>
+          <article className="table-card">
+            <div className="table-card__header">
+              <strong>03. Pickup confirmed</strong>
+              <span className="status-pill is-transit">Stage two</span>
+            </div>
+            <p className="muted">
+              Once the seller confirms cargo collection, destination visibility unlocks and the
+              delivery leg becomes actionable.
+            </p>
+          </article>
+          <article className="table-card">
+            <div className="table-card__header">
+              <strong>04. Complete or dispute</strong>
+              <span className="status-pill is-disputed">Resolution</span>
+            </div>
+            <p className="muted">
+              Successful delivery releases stake and improves score. Failure can trigger slashing,
+              insurance payout, and recovery flow.
+            </p>
+          </article>
+        </div>
+      </section>
+
       <div className="dashboard-grid">
-        <section className="panel stack">
+        <section className="panel stack" id="reputation-preview">
           <div className="section-head">
             <div>
               <p className="eyebrow">Reputation</p>
@@ -135,7 +189,7 @@ export function TradeRoutesDashboard() {
           </div>
         </section>
 
-        <section className="panel stack">
+        <section className="panel stack" id="insurance-preview">
           <div className="section-head">
             <div>
               <p className="eyebrow">Insurance</p>

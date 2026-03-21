@@ -18,7 +18,7 @@ export default async function OpportunitiesPage() {
   return (
     <AppShell>
       <main className="page-stack">
-        <section className="panel stack">
+        <section className="panel stack" id="intel">
           <div className="section-head">
             <div>
               <p className="eyebrow">Opportunities + Intel</p>

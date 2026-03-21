@@ -26,6 +26,7 @@
 
 html {
   color-scheme: dark;
+  scroll-behavior: smooth;
   background:
     radial-gradient(circle at top, rgba(245, 121, 32, 0.08), transparent 20%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
@@ -695,12 +696,12 @@ dd {
   gap: 10px;
 }
 
-.rule-strip span,
+.rule-strip a,
 .meta-chip {
   min-height: 44px;
 }
 
-.rule-strip span {
+.rule-strip a {
   display: inline-flex;
   align-items: center;
   padding: 0 14px;
@@ -710,11 +711,23 @@ dd {
   color: var(--muted);
 }
 
+.rule-strip a:hover {
+  color: #ffd3b5;
+  border-color: rgba(245, 121, 32, 0.32);
+  background: rgba(245, 121, 32, 0.1);
+}
+
 .meta-chip {
   display: grid;
   gap: 4px;
   padding: 12px 14px;
   min-width: 140px;
+}
+
+.timeline-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .order-stack {
@@ -1090,6 +1103,17 @@ dd {
   display: none;
 }
 
+#overview,
+#heatmap,
+#bidding-pool,
+#staged-reveal,
+#reputation,
+#insurance,
+#contracts,
+#intel {
+  scroll-margin-top: 104px;
+}
+
 .mobile-only {
   display: none;
 }
@@ -1101,7 +1125,8 @@ dd {
 @media (max-width: 1100px) {
   .landing-features,
   .order-metrics,
-  .stats-grid {
+  .stats-grid,
+  .timeline-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1204,7 +1229,8 @@ dd {
   .form-grid,
   .order-metrics,
   .order-card__side,
-  .stats-grid {
+  .stats-grid,
+  .timeline-grid {
     grid-template-columns: 1fr;
   }
 

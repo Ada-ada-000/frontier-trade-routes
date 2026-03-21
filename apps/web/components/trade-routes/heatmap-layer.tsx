@@ -23,7 +23,7 @@ function colorForIntensity(value: number) {
 
 export function HeatmapLayer({ data }: { data: HeatmapTile[] }) {
   return (
-    <section className="panel heatmap-panel">
+    <section className="panel heatmap-panel" id="heatmap">
       <div className="section-head">
         <div>
           <p className="eyebrow">Fuzzy heatmap</p>

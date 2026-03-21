@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const primaryLinks = [
-  { href: "/app", label: "Overview", code: "00" },
-  { href: "/contracts", label: "Orders", code: "01" },
-  { href: "/opportunities", label: "Intel", code: "02" },
-  { href: "/app/reputation", label: "Reputation", code: "03" },
-  { href: "/app/insurance", label: "Insurance", code: "04" },
+  { href: "/app#overview", label: "Overview", code: "00", match: "/app" },
+  { href: "/contracts#contracts", label: "Orders", code: "01", match: "/contracts" },
+  { href: "/opportunities#intel", label: "Intel", code: "02", match: "/opportunities" },
+  { href: "/app/reputation#reputation", label: "Reputation", code: "03", match: "/app/reputation" },
+  { href: "/app/insurance#insurance", label: "Insurance", code: "04", match: "/app/insurance" },
 ];
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -28,7 +28,8 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
         <nav className="sidebar-nav">
           {primaryLinks.map((link) => {
-            const active = pathname === link.href || (link.href !== "/app" && pathname.startsWith(link.href));
+            const active =
+              pathname === link.match || (link.match !== "/app" && pathname.startsWith(link.match));
             return (
               <Link key={link.href} href={link.href} className={`sidebar-link ${active ? "is-active" : ""}`} onClick={onClose}>
                 <span className="sidebar-link__code">{link.code}</span>

@@ -18,7 +18,7 @@ export default async function ContractsPage({
   return (
     <AppShell>
       <main className="page-stack">
-        <section className="panel stack">
+        <section className="panel stack" id="contracts">
           <div className="section-head">
             <div>
               <p className="eyebrow">Contracts</p>

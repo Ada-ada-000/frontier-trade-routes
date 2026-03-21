@@ -5,11 +5,11 @@ import { usePathname } from "next/navigation";
 import { WalletPanel } from "./wallet-panel";
 
 const links = [
-  { href: "/app", label: "Overview" },
-  { href: "/contracts", label: "Orders" },
-  { href: "/opportunities", label: "Intel" },
-  { href: "/app/reputation", label: "Reputation" },
-  { href: "/app/insurance", label: "Insurance" },
+  { href: "/app#overview", label: "Overview", match: "/app" },
+  { href: "/contracts#contracts", label: "Orders", match: "/contracts" },
+  { href: "/opportunities#intel", label: "Intel", match: "/opportunities" },
+  { href: "/app/reputation#reputation", label: "Reputation", match: "/app/reputation" },
+  { href: "/app/insurance#insurance", label: "Insurance", match: "/app/insurance" },
 ];
 
 export function TopNav({
@@ -42,7 +42,8 @@ export function TopNav({
 
       <nav className="top-nav__links desktop-only">
         {links.map((link) => {
-          const active = pathname === link.href || (link.href !== "/app" && pathname.startsWith(link.href));
+          const active =
+            pathname === link.match || (link.match !== "/app" && pathname.startsWith(link.match));
           return (
             <Link key={link.href} href={link.href} className={`top-nav__link ${active ? "is-active" : ""}`}>
               {link.label}
