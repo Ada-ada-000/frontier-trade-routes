@@ -7,8 +7,8 @@ const primaryLinks = [
   { href: "/app", label: "Overview", code: "00" },
   { href: "/contracts", label: "Orders", code: "01" },
   { href: "/opportunities", label: "Intel", code: "02" },
-  { href: "/app#reputation", label: "Reputation", code: "03" },
-  { href: "/app#insurance", label: "Insurance", code: "04" },
+  { href: "/app/reputation", label: "Reputation", code: "03" },
+  { href: "/app/insurance", label: "Insurance", code: "04" },
 ];
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {

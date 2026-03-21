@@ -3,6 +3,7 @@
 import { startTransition, useMemo, useState } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { HeatmapLayer } from "./heatmap-layer";
+import Link from "next/link";
 import { OrderCard } from "./order-card";
 import { StakeModal } from "./stake-modal";
 import { useTradeRoutes } from "../../lib/trade-routes/use-trade-routes";
@@ -66,8 +67,8 @@ export function TradeRoutesDashboard() {
           <span>Fuzzy Heatmap</span>
           <span>Weighted Bidding Pool</span>
           <span>Staged Reveal</span>
-          <span id="reputation">Reputation</span>
-          <span id="insurance">Insurance</span>
+          <span>Reputation</span>
+          <span>Insurance</span>
         </div>
       </section>
 
@@ -108,6 +109,61 @@ export function TradeRoutesDashboard() {
                 }}
               />
             ))}
+          </div>
+        </section>
+      </div>
+
+      <div className="dashboard-grid">
+        <section className="panel stack">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Reputation</p>
+              <h2>Carrier access and score ladder</h2>
+            </div>
+            <Link href="/app/reputation" className="button secondary">
+              Open Reputation
+            </Link>
+          </div>
+          <div className="meta-strip">
+            {tradeRoutes.profiles.slice(0, 3).map((profile) => (
+              <div className="meta-chip" key={profile.owner}>
+                <span className="eyebrow">Tier {profile.tier}</span>
+                <strong>{profile.score} score</strong>
+                <span>{profile.successCount} successful runs</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel stack">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Insurance</p>
+              <h2>Mutual recovery pool</h2>
+            </div>
+            <Link href="/app/insurance" className="button secondary">
+              Open Insurance
+            </Link>
+          </div>
+          <div className="meta-strip">
+            <div className="meta-chip">
+              <span className="eyebrow">Pool Capital</span>
+              <strong>
+                {(Number(tradeRoutes.insurancePool.capitalMist) / 1_000_000_000).toFixed(0)} SUI
+              </strong>
+            </div>
+            <div className="meta-chip">
+              <span className="eyebrow">Premiums</span>
+              <strong>
+                {(Number(tradeRoutes.insurancePool.totalPremiumsCollectedMist) / 1_000_000_000).toFixed(0)} SUI
+              </strong>
+            </div>
+            <div className="meta-chip">
+              <span className="eyebrow">Recoveries</span>
+              <strong>
+                {(Number(tradeRoutes.insurancePool.totalRecoveriesMist) / 1_000_000_000).toFixed(0)} SUI
+              </strong>
+            </div>
           </div>
         </section>
       </div>

@@ -5,8 +5,18 @@ import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { SuiMoveObject, SuiObjectResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
-import { mockHeatmapTiles, mockOrders } from "./mock-data";
-import type { AcceptOrderInput, HeatmapTile, OrderPublicView, TradeRoutesState } from "./types";
+import {
+  mockHeatmapTiles,
+  mockInsurancePool,
+  mockOrders,
+  mockReputationProfiles,
+} from "./mock-data";
+import type {
+  AcceptOrderInput,
+  HeatmapTile,
+  OrderPublicView,
+  TradeRoutesState,
+} from "./types";
 
 const CLOCK_OBJECT_ID = "0x6";
 
@@ -244,6 +254,8 @@ export function useTradeRoutes() {
     ...state,
     orders,
     heatmap,
+    profiles: mockReputationProfiles,
+    insurancePool: mockInsurancePool,
     ownedCoins: ownedCoinsQuery.data ?? [],
     isLoading: ordersQuery.isLoading,
     isAccepting: acceptOrder.isPending,

@@ -8,8 +8,8 @@ const links = [
   { href: "/app", label: "Overview" },
   { href: "/contracts", label: "Orders" },
   { href: "/opportunities", label: "Intel" },
-  { href: "/app#reputation", label: "Reputation" },
-  { href: "/app#insurance", label: "Insurance" },
+  { href: "/app/reputation", label: "Reputation" },
+  { href: "/app/insurance", label: "Insurance" },
 ];
 
 export function TopNav({

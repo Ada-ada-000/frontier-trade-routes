@@ -1,4 +1,9 @@
-import type { HeatmapTile, OrderPublicView } from "./types";
+import type {
+  HeatmapTile,
+  InsurancePoolSnapshot,
+  OrderPublicView,
+  ReputationProfile,
+} from "./types";
 
 export const mockOrders: OrderPublicView[] = [
   {
@@ -87,3 +92,40 @@ export const mockHeatmapTiles: HeatmapTile[] = [
   { region: "Black Rise", intensity: 56, demandCount: 1, insuredCount: 1, urgentCount: 0 },
   { region: "Sinq Laison", intensity: 69, demandCount: 1, insuredCount: 1, urgentCount: 0 },
 ];
+
+export const mockReputationProfiles: ReputationProfile[] = [
+  {
+    owner: "0xd44ce88f928e7777c9f20001d31c2f42f20991ab",
+    score: 835,
+    successCount: 28,
+    failCount: 1,
+    tier: 3,
+    activeStakeMist: "140000000000",
+    totalSlashedMist: "18000000000",
+  },
+  {
+    owner: "0xf66ce88f928e7777c9f20001d31c2f42f20991ab",
+    score: 712,
+    successCount: 19,
+    failCount: 3,
+    tier: 2,
+    activeStakeMist: "120000000000",
+    totalSlashedMist: "42000000000",
+  },
+  {
+    owner: "0x911ce88f928e7777c9f20001d31c2f42f20991ab",
+    score: 488,
+    successCount: 8,
+    failCount: 5,
+    tier: 1,
+    activeStakeMist: "45000000000",
+    totalSlashedMist: "79000000000",
+  },
+];
+
+export const mockInsurancePool: InsurancePoolSnapshot = {
+  capitalMist: "680000000000",
+  totalPremiumsCollectedMist: "126000000000",
+  totalClaimsPaidMist: "41000000000",
+  totalRecoveriesMist: "24000000000",
+};
