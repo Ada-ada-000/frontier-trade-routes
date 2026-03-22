@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "../../components/app-shell";
 import { IntelEventFeed } from "../../components/intel-event-feed";
 import { IntelSummary } from "../../components/intel-summary";
@@ -18,27 +19,15 @@ export default async function OpportunitiesPage() {
   return (
     <AppShell>
       <main className="page-stack">
-        <section className="panel stack" id="intel">
+        <section className="panel stack panel--subtle" id="intel">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Opportunities + Intel</p>
-              <h1>Frontier situational awareness</h1>
+              <p className="eyebrow">Support Tool</p>
+              <h1>Intel</h1>
             </div>
-            <p className="muted narrow">
-              Privacy-aware regional intel with aggregation, delay, and transparent scoring for
-              procure and deliver coordination.
-            </p>
-          </div>
-          <div className="formula-box">
-            <strong>Score formula</strong>
-            <p>opportunity score = demand - supply - risk × 0.7 + adjustment + 50</p>
-          </div>
-          <div className="formula-box">
-            <strong>Privacy model</strong>
-            <p>
-              Raw intel is processed off-chain. The UI shows delayed, region-level summaries only,
-              while verification anchors can be committed on Sui.
-            </p>
+            <Link href="/app#heatmap" className="button tertiary">
+              Back to App
+            </Link>
           </div>
         </section>
         <IntelSummary

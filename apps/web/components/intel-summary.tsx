@@ -1,10 +1,4 @@
-import {
-  describePrivacy,
-  riskLevelLabels,
-  type IntelEvent,
-  type Opportunity,
-  type RegionStatus,
-} from "@eve/shared";
+import { riskLevelLabels, type IntelEvent, type Opportunity, type RegionStatus } from "@eve/shared";
 
 function findHighestOpportunity(opportunities: Opportunity[]) {
   return opportunities.reduce((best, current) => {
@@ -37,7 +31,6 @@ export function IntelSummary({
 }) {
   const highestOpportunity = findHighestOpportunity(opportunities);
   const highestRisk = findHighestRisk(regionStatuses);
-  const privacy = intelEvents[0]?.privacy ?? regionStatuses[0]?.privacy;
 
   const cards = [
     {
@@ -57,8 +50,8 @@ export function IntelSummary({
     },
     {
       label: "Verification",
-      value: privacy?.verificationMode === "sui-anchor" ? "SUI-ANCHORED" : "MOCK",
-      note: privacy?.anchoredDigest ? privacy.anchoredDigest.slice(0, 12) : "Live adapter ready",
+      value: intelEvents[0]?.privacy?.verificationMode === "sui-anchor" ? "SUI" : "MOCK",
+      note: "Anchor ready",
     },
   ];
 
@@ -67,11 +60,10 @@ export function IntelSummary({
       <div className="section-head">
         <div>
           <p className="eyebrow">Frontier Intel</p>
-          <h2>Situational awareness overview</h2>
+          <h2>Intel snapshot</h2>
         </div>
-        <span className="subtle">Off-chain compute, on-chain verification</span>
+        <span className="subtle">Live summary</span>
       </div>
-      {privacy ? <div className="formula-box">{describePrivacy(privacy)}</div> : null}
       <div className="intel-summary-grid">
         {cards.map((card) => (
           <article key={card.label} className="panel stat-card">

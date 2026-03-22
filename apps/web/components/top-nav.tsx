@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { FormEvent, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { WalletPanel } from "./wallet-panel";
 
 const links = [
@@ -14,17 +15,31 @@ const links = [
 
 export function TopNav({
   compact = false,
+  showMenuButton = true,
   onMenuToggle,
 }: {
   compact?: boolean;
+  showMenuButton?: boolean;
   onMenuToggle?: () => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextQuery = query.trim();
+    if (!nextQuery) {
+      router.push("/search");
+      return;
+    }
+    router.push(`/search?q=${encodeURIComponent(nextQuery)}`);
+  }
 
   return (
     <header className={`top-nav ${compact ? "is-compact" : ""}`}>
       <div className="top-nav__left">
-        {compact ? (
+        {compact && showMenuButton ? (
           <button type="button" className="nav-icon-button mobile-only" onClick={onMenuToggle} aria-label="Open navigation">
             <span />
             <span />
@@ -39,6 +54,19 @@ export function TopNav({
           </span>
         </Link>
       </div>
+
+      <form className="top-nav__search" onSubmit={onSubmit}>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search region or resource"
+          aria-label="Search region or resource"
+        />
+        <button type="submit" className="button secondary">
+          Search
+        </button>
+      </form>
 
       <nav className="top-nav__links desktop-only">
         {links.map((link) => {

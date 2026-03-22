@@ -68,7 +68,6 @@ export function ContractForm({
           <p className="eyebrow">Create</p>
           <h2>New frontier contract</h2>
         </div>
-        <span className="subtle">Wallet gated. Writes to Sui when package id is configured.</span>
       </div>
       <form className="form-grid" onSubmit={onSubmit}>
         <label>

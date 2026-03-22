@@ -17,14 +17,10 @@ export function ReputationPanel({ profiles }: { profiles: ReputationProfile[] })
         <div className="section-head">
           <div>
             <p className="eyebrow">Reputation Registry</p>
-            <h1>Carrier trust and stake access control</h1>
+            <h1>Carrier reputation</h1>
           </div>
           <div className="hero-badge">Tiered / Gated Access</div>
         </div>
-        <p className="hero-lede">
-          Reputation determines which contracts a carrier can see, how much capital they can lock,
-          and how quickly buyers trust them in weighted bidding.
-        </p>
         <div className="metric-grid">
           <article className="metric-card">
             <p className="eyebrow">Top Carrier</p>
@@ -97,7 +93,7 @@ export function ReputationPanel({ profiles }: { profiles: ReputationProfile[] })
           <div className="section-head">
             <div>
               <p className="eyebrow">Tier Rules</p>
-              <h2>Who can access premium routes</h2>
+              <h2>Access bands</h2>
             </div>
           </div>
           <div className="table-stack">
@@ -106,30 +102,21 @@ export function ReputationPanel({ profiles }: { profiles: ReputationProfile[] })
                 <strong>Gold Tier</strong>
                 <span className="status-pill is-transit">High value lanes</span>
               </div>
-              <p className="muted">
-                Highest reputation band. Eligible for premium rewards, higher collateral routes, and
-                preferred selection in competitive bidding.
-              </p>
+              <p className="muted">Premium routes and preferred selection.</p>
             </article>
             <article className="table-card">
               <div className="table-card__header">
                 <strong>Silver Tier</strong>
                 <span className="status-pill is-assigned">Mid-range access</span>
               </div>
-              <p className="muted">
-                Standard carrier access. Can fulfill routine contracts and build score toward better
-                weighted visibility.
-              </p>
+              <p className="muted">Standard routes and regular contract access.</p>
             </article>
             <article className="table-card">
               <div className="table-card__header">
                 <strong>Bronze Tier</strong>
                 <span className="status-pill is-disputed">Restricted</span>
               </div>
-              <p className="muted">
-                New or low-trust carriers. Can only see lower-risk jobs until successful deliveries
-                improve score and reduce failure ratio.
-              </p>
+              <p className="muted">Lower-risk routes until score improves.</p>
             </article>
           </div>
         </section>

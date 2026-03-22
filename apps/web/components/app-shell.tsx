@@ -1,9 +1,5 @@
- "use client";
-
 import type { ReactNode } from "react";
-import { useState } from "react";
 import { Footer } from "./footer";
-import { Sidebar } from "./sidebar";
 import { TopNav } from "./top-nav";
 
 export function AppShell({
@@ -11,13 +7,10 @@ export function AppShell({
 }: {
   children: ReactNode;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
   return (
-    <div className="app-shell">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <div className="app-shell app-shell--full">
       <div className="app-shell__main">
-        <TopNav compact onMenuToggle={() => setSidebarOpen((current) => !current)} />
+        <TopNav />
         <main className="app-shell__content">{children}</main>
         <Footer />
       </div>

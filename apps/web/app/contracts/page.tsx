@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "../../components/app-shell";
 import { ContractForm } from "../../components/contract-form";
 import { ContractsClientPage } from "./page-client";
@@ -18,15 +19,15 @@ export default async function ContractsPage({
   return (
     <AppShell>
       <main className="page-stack">
-        <section className="panel stack" id="contracts">
+        <section className="panel stack panel--subtle" id="contracts">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Contracts</p>
-              <h1>Publish and fulfill contracts</h1>
+              <p className="eyebrow">Support Tool</p>
+              <h1>Contracts</h1>
             </div>
-            <p className="muted narrow">
-              Create a small verifiable contract and track the full lifecycle in the UI.
-            </p>
+            <Link href="/app#bidding-pool" className="button tertiary">
+              Back to App
+            </Link>
           </div>
         </section>
         <div className="two-column">

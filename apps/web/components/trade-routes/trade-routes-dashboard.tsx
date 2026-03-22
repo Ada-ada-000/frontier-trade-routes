@@ -31,36 +31,31 @@ export function TradeRoutesDashboard() {
       <section className="dashboard-hero panel stack" id="overview">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Tactical Logistics Grid</p>
-            <h1>Fuzzy intel, weighted bidding, staged route reveal.</h1>
+            <p className="eyebrow">Primary Console</p>
+            <h1>Heatmap in. Route out.</h1>
           </div>
-          <div className="hero-badge">App / Control Surface</div>
+          <div className="hero-badge">Main Route Surface</div>
         </div>
-        <p className="hero-lede">
-          Frontier Trade Routes is a hardened logistics and intel terminal. Public discovery stays
-          blurred, stake commitment unlocks staged visibility, and reputation plus insurance reduce
-          bad delivery flow.
-        </p>
         <div className="metric-grid">
           <article className="metric-card">
-            <p className="eyebrow">Execution</p>
+            <p className="eyebrow">Mode</p>
             <strong>{tradeRoutes.mode.toUpperCase()}</strong>
-            <span>{tradeRoutes.mode === "sui" ? "Live order rail" : "Mock relay active"}</span>
+            <span>{tradeRoutes.mode === "sui" ? "Live queue" : "Mock queue"}</span>
           </article>
           <article className="metric-card">
-            <p className="eyebrow">Open queue</p>
+            <p className="eyebrow">Open</p>
             <strong>{metrics.openOrders}</strong>
-            <span>Seller-visible assignments</span>
+            <span>Visible route tasks</span>
           </article>
           <article className="metric-card">
-            <p className="eyebrow">Stake pressure</p>
+            <p className="eyebrow">Stake</p>
             <strong>{metrics.totalStake.toFixed(0)} SUI</strong>
-            <span>Capital currently requested</span>
+            <span>Capital locked</span>
           </article>
           <article className="metric-card">
             <p className="eyebrow">Insured</p>
             <strong>{metrics.insured}</strong>
-            <span>Orders under recovery pool</span>
+            <span>Recovery-ready jobs</span>
           </article>
         </div>
         <div className="rule-strip">
@@ -84,20 +79,6 @@ export function TradeRoutesDashboard() {
               Refresh Queue
             </button>
           </div>
-          <div className="meta-strip">
-            <div className="meta-chip">
-              <span className="eyebrow">Wallet</span>
-              <strong>{account ? "Ready" : "Not linked"}</strong>
-            </div>
-            <div className="meta-chip">
-              <span className="eyebrow">Coord Precision</span>
-              <strong>Staged / Hidden</strong>
-            </div>
-            <div className="meta-chip">
-              <span className="eyebrow">Insurance Model</span>
-              <strong>Mutual Pool</strong>
-            </div>
-          </div>
           <div className="order-stack">
             {tradeRoutes.orders.map((order) => (
               <OrderCard
@@ -117,10 +98,10 @@ export function TradeRoutesDashboard() {
         <div className="section-head">
           <div>
             <p className="eyebrow">Staged Reveal</p>
-            <h2>Route visibility unlocks in two controlled steps</h2>
+            <h2>Route visibility</h2>
           </div>
           <Link href="/contracts" className="button secondary">
-            Open Contract Flow
+            Contract Flow
           </Link>
         </div>
         <div className="timeline-grid">
@@ -129,74 +110,62 @@ export function TradeRoutesDashboard() {
               <strong>01. Accept order</strong>
               <span className="status-pill is-open">Stake locked</span>
             </div>
-            <p className="muted">
-              Seller meets reputation and stake thresholds, then commits collateral before seeing
-              full delivery details.
-            </p>
+            <p className="muted">Lock first.</p>
           </article>
           <article className="table-card">
             <div className="table-card__header">
               <strong>02. Pickup revealed</strong>
               <span className="status-pill is-assigned">Stage one</span>
             </div>
-            <p className="muted">
-              Only the pickup location becomes visible after acceptance, so the route cannot be
-              leaked in full at the moment of assignment.
-            </p>
+            <p className="muted">Pickup only.</p>
           </article>
           <article className="table-card">
             <div className="table-card__header">
               <strong>03. Pickup confirmed</strong>
               <span className="status-pill is-transit">Stage two</span>
             </div>
-            <p className="muted">
-              Once the seller confirms cargo collection, destination visibility unlocks and the
-              delivery leg becomes actionable.
-            </p>
+            <p className="muted">Destination opens.</p>
           </article>
           <article className="table-card">
             <div className="table-card__header">
               <strong>04. Complete or dispute</strong>
               <span className="status-pill is-disputed">Resolution</span>
             </div>
-            <p className="muted">
-              Successful delivery releases stake and improves score. Failure can trigger slashing,
-              insurance payout, and recovery flow.
-            </p>
+            <p className="muted">Release or recover.</p>
           </article>
         </div>
       </section>
 
-      <div className="dashboard-grid">
-        <section className="panel stack" id="reputation-preview">
+      <div className="dashboard-grid dashboard-grid--aux">
+        <section className="panel stack aux-panel" id="reputation-preview">
           <div className="section-head">
             <div>
               <p className="eyebrow">Reputation</p>
-              <h2>Carrier access and score ladder</h2>
+              <h2>Carrier access</h2>
             </div>
             <Link href="/app/reputation" className="button secondary">
-              Open Reputation
+              Open
             </Link>
           </div>
           <div className="meta-strip">
             {tradeRoutes.profiles.slice(0, 3).map((profile) => (
               <div className="meta-chip" key={profile.owner}>
                 <span className="eyebrow">Tier {profile.tier}</span>
-                <strong>{profile.score} score</strong>
-                <span>{profile.successCount} successful runs</span>
+                <strong>{profile.score}</strong>
+                <span>{profile.successCount} completed</span>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="panel stack" id="insurance-preview">
+        <section className="panel stack aux-panel" id="insurance-preview">
           <div className="section-head">
             <div>
               <p className="eyebrow">Insurance</p>
-              <h2>Mutual recovery pool</h2>
+              <h2>Recovery pool</h2>
             </div>
             <Link href="/app/insurance" className="button secondary">
-              Open Insurance
+              Open
             </Link>
           </div>
           <div className="meta-strip">

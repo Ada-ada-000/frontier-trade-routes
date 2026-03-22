@@ -4,19 +4,16 @@ import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit";
 
 export function WalletPanel({ compact = false }: { compact?: boolean }) {
   const account = useCurrentAccount();
+  const label = account
+    ? `Wallet / ${account.address.slice(0, 6)}...${account.address.slice(-4)}`
+    : "Wallet / Offline";
 
   return (
     <div className={`wallet-panel ${compact ? "is-compact" : ""}`}>
       <div className="wallet-panel__state">
         <span className={`status-dot ${account ? "online" : "offline"}`} />
         <div>
-          <p className="eyebrow">Wallet Link</p>
-          <strong>{account ? "Terminal linked" : "Terminal offline"}</strong>
-          <span className="wallet-panel__meta">
-            {account
-              ? `${account.address.slice(0, 6)}...${account.address.slice(-4)}`
-              : "EVE Vault / Sui-compatible wallet"}
-          </span>
+          <strong>{label}</strong>
         </div>
       </div>
       <div className="wallet-panel__button">

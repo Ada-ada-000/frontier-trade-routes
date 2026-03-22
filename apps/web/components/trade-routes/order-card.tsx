@@ -73,10 +73,6 @@ export function OrderCard({
             <strong>{order.minReputationScore}</strong>
           </div>
           <div className="metric-cell">
-            <span className="eyebrow">Quote</span>
-            <strong>{formatMist(order.quotedPriceMist)}</strong>
-          </div>
-          <div className="metric-cell">
             <span className="eyebrow">Stage</span>
             <strong>{formatStage(order.stage)}</strong>
           </div>
@@ -84,25 +80,21 @@ export function OrderCard({
             <span className="eyebrow">Mode</span>
             <strong>{order.orderMode}</strong>
           </div>
+          <div className="metric-cell">
+            <span className="eyebrow">Bids</span>
+            <strong>{order.bidCount}</strong>
+          </div>
         </div>
       </div>
 
       <aside className="order-card__side">
         <div className="side-block">
-          <span className="eyebrow">Buyer</span>
-          <strong>{formatAddress(order.buyer)}</strong>
-        </div>
-        <div className="side-block">
           <span className="eyebrow">Seller</span>
           <strong>{order.seller ? formatAddress(order.seller) : "Unassigned"}</strong>
         </div>
         <div className="side-block">
-          <span className="eyebrow">Bid Pool</span>
-          <strong>{order.bidCount}</strong>
-        </div>
-        <div className="side-block">
-          <span className="eyebrow">Insurance</span>
-          <strong>{order.insured ? "Recovery active" : "None"}</strong>
+          <span className="eyebrow">Deadline</span>
+          <strong>{new Date(Number(order.deadlineMs)).toLocaleDateString()}</strong>
         </div>
         <button
           type="button"

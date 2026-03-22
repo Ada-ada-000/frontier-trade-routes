@@ -18,14 +18,10 @@ export function InsurancePanel({
         <div className="section-head">
           <div>
             <p className="eyebrow">Insurance Pool</p>
-            <h1>Mutual recovery and buyer protection rail</h1>
+            <h1>Insurance pool</h1>
           </div>
           <div className="hero-badge">Capital / Recovery Loop</div>
         </div>
-        <p className="hero-lede">
-          Buyers can insure contracts against failure. When delivery breaks or arbitration rules
-          against a seller, the pool compensates first and then recovers from slashed stake.
-        </p>
         <div className="metric-grid">
           <article className="metric-card">
             <p className="eyebrow">Capital</p>
@@ -95,7 +91,7 @@ export function InsurancePanel({
           <div className="section-head">
             <div>
               <p className="eyebrow">Flow</p>
-              <h2>Failure handling</h2>
+              <h2>Recovery flow</h2>
             </div>
           </div>
           <div className="table-stack">
@@ -104,28 +100,21 @@ export function InsurancePanel({
                 <strong>1. Buyer buys coverage</strong>
                 <span className="status-pill is-open">{insuredOrders.length} insured</span>
               </div>
-              <p className="muted">
-                Premium is paid into the mutual pool when the order is created or upgraded.
-              </p>
+              <p className="muted">Premium enters the pool.</p>
             </article>
             <article className="table-card">
               <div className="table-card__header">
                 <strong>2. Arbitration or timeout triggers claim</strong>
                 <span className="status-pill is-disputed">{disputedOrders} disputed</span>
               </div>
-              <p className="muted">
-                If fulfillment fails, the pool pays the buyer first to keep the market credible.
-              </p>
+              <p className="muted">Pool pays the buyer first.</p>
             </article>
             <article className="table-card">
               <div className="table-card__header">
                 <strong>3. Slashing and recovery</strong>
                 <span className="status-pill is-assigned">Recovery loop</span>
               </div>
-              <p className="muted">
-                The seller stake is confiscated and routed back to the pool. Future bounty logic can
-                extend enforcement beyond simple slashing.
-              </p>
+              <p className="muted">Seller stake routes back into the pool.</p>
             </article>
           </div>
         </section>
