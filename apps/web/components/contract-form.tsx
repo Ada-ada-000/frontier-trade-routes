@@ -45,6 +45,7 @@ export function ContractForm({
   initialRegion?: string;
 }) {
   const { createContract, feedback, busy } = useTradeRoutes();
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState<ContractFormInput>(
     buildInitialForm(initialType, initialResource, initialRegion),
   );
@@ -65,29 +66,36 @@ export function ContractForm({
     <section className="panel stack">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Create</p>
-          <h2>New frontier contract</h2>
+          <p className="eyebrow">Post Order</p>
+          <h2>Create a route request</h2>
         </div>
       </div>
       <form className="form-grid" onSubmit={onSubmit}>
-        <label>
-          <span>Contract type</span>
-          <select
-            value={form.contractType}
-            onChange={(event) =>
-              updateField("contractType", event.target.value as ContractType)
-            }
-          >
-            <option value="procure">procure</option>
-            <option value="deliver">deliver</option>
-          </select>
-        </label>
+        <div className="full-width">
+          <span>Order type</span>
+          <div className="toggle-grid">
+            {([
+              ["procure", "📥 Procure", "Source a resource into a market"],
+              ["deliver", "📤 Deliver", "Move cargo into a target region"],
+            ] as const).map(([value, label, note]) => (
+              <button
+                key={value}
+                type="button"
+                className={`toggle-card ${form.contractType === value ? "is-active" : ""}`}
+                onClick={() => updateField("contractType", value as ContractType)}
+              >
+                <strong>{label}</strong>
+                <span>{note}</span>
+              </button>
+            ))}
+          </div>
+        </div>
         <label>
           <span>Resource</span>
           <input
             value={form.resource}
             onChange={(event) => updateField("resource", event.target.value)}
-            placeholder="Rare Alloy"
+            placeholder="Rare Alloy · try O3H-1FN or EH1-FQC"
           />
         </label>
         <label>
@@ -104,7 +112,7 @@ export function ContractForm({
           <input
             value={form.targetRegion}
             onChange={(event) => updateField("targetRegion", event.target.value)}
-            placeholder="Outer Ring"
+            placeholder="O3H-1FN · hotspot routes suggest EH1-FQC"
           />
         </label>
         <label>
@@ -116,25 +124,39 @@ export function ContractForm({
             onChange={(event) => updateField("reward", Number(event.target.value))}
           />
         </label>
-        <label>
-          <span>Optional collateral</span>
-          <input
-            type="number"
-            min="0"
-            value={form.collateral ?? 0}
-            onChange={(event) => updateField("collateral", Number(event.target.value))}
-          />
-        </label>
-        <label className="full-width">
-          <span>Expiration</span>
-          <input
-            type="datetime-local"
-            value={form.expirationTimestamp}
-            onChange={(event) => updateField("expirationTimestamp", event.target.value)}
-          />
-        </label>
+        <div className="full-width accordion-panel">
+          <button
+            type="button"
+            className="accordion-toggle"
+            onClick={() => setShowAdvanced((current) => !current)}
+          >
+            <span>Advanced Settings</span>
+            <span>{showAdvanced ? "−" : "+"}</span>
+          </button>
+          {showAdvanced ? (
+            <div className="accordion-content">
+              <label>
+                <span>Bond</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.collateral ?? 0}
+                  onChange={(event) => updateField("collateral", Number(event.target.value))}
+                />
+              </label>
+              <label>
+                <span>Deadline</span>
+                <input
+                  type="datetime-local"
+                  value={form.expirationTimestamp}
+                  onChange={(event) => updateField("expirationTimestamp", event.target.value)}
+                />
+              </label>
+            </div>
+          ) : null}
+        </div>
         <button type="submit" className="button primary" disabled={busy}>
-          {busy ? "Submitting..." : "Create contract"}
+          {busy ? "Posting..." : "Post Order"}
         </button>
       </form>
       {feedback.message ? (
@@ -142,7 +164,7 @@ export function ContractForm({
           <p>{feedback.message}</p>
           {feedback.explorerUrl ? (
             <a href={feedback.explorerUrl} target="_blank" rel="noreferrer">
-              View transaction
+              View activity
             </a>
           ) : null}
         </div>

@@ -38,54 +38,66 @@ export function TopNav({
 
   return (
     <header className={`top-nav ${compact ? "is-compact" : ""}`}>
-      <div className="top-nav__left">
-        {compact && showMenuButton ? (
-          <button type="button" className="nav-icon-button mobile-only" onClick={onMenuToggle} aria-label="Open navigation">
-            <span />
-            <span />
-            <span />
-          </button>
-        ) : null}
-        <Link href="/" className="brand-link">
-          <span className="brand-mark">FT</span>
-          <span className="brand-copy">
-            <strong>Frontier Trade Routes</strong>
-            <small>EVE Frontier x Sui</small>
-          </span>
-        </Link>
-      </div>
-
-      <form className="top-nav__search" onSubmit={onSubmit}>
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search region or resource"
-          aria-label="Search region or resource"
-        />
-        <button type="submit" className="button secondary">
-          Search
-        </button>
-      </form>
-
-      <nav className="top-nav__links desktop-only">
-        {links.map((link) => {
-          const active =
-            pathname === link.match || (link.match !== "/app" && pathname.startsWith(link.match));
-          return (
-            <Link key={link.href} href={link.href} className={`top-nav__link ${active ? "is-active" : ""}`}>
-              {link.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="top-nav__right">
-        <div className="network-pill desktop-only">
-          <span className="status-dot online" />
-          <span>Command Net / Active</span>
+      <div className="top-nav__bar">
+        <div className="top-nav__left">
+          {compact && showMenuButton ? (
+            <button type="button" className="nav-icon-button mobile-only" onClick={onMenuToggle} aria-label="Open navigation">
+              <span />
+              <span />
+              <span />
+            </button>
+          ) : null}
+          <Link href="/" className="brand-link">
+            <span className="brand-mark">FT</span>
+            <span className="brand-copy">
+              <strong>Frontier Trade Routes</strong>
+              <small>EVE Frontier x Sui</small>
+            </span>
+          </Link>
         </div>
-        <WalletPanel compact={compact} />
+
+        <div className="top-nav__center">
+          <form className="top-nav__search" onSubmit={onSubmit}>
+            <span className="top-nav__search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.5-3.5" />
+              </svg>
+            </span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search"
+              aria-label="Search"
+            />
+          </form>
+
+          <nav className="top-nav__links desktop-only">
+            {links.map((link) => {
+              const active =
+                pathname === link.match || (link.match !== "/app" && pathname.startsWith(link.match));
+              return (
+                <Link key={link.href} href={link.href} className={`top-nav__link ${active ? "is-active" : ""}`}>
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        <div className="top-nav__right">
+          <div className="network-pill desktop-only">
+            <span className="status-dot online pulse" />
+            <span>Online</span>
+          </div>
+          <WalletPanel compact={compact} />
+        </div>
+      </div>
+      <div className="top-nav__mobile-row mobile-only">
+        <div className="top-nav__right">
+          <WalletPanel compact={compact} />
+        </div>
       </div>
     </header>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   formatAddress,
   formatMist,
@@ -33,6 +34,37 @@ export function OrderCard({
   walletConnected: boolean;
   onAccept(order: OrderPublicView): void;
 }) {
+  const router = useRouter();
+
+  function handlePrimaryAction() {
+    if (!walletConnected) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (order.status === "open") {
+      onAccept(order);
+      return;
+    }
+
+    router.push("/contracts#contracts");
+  }
+
+  const actionLabel = !walletConnected
+    ? "Accept Order"
+    : order.status === "open"
+      ? "Accept Order"
+      : "View Flow";
+
+  const stageLabel =
+    order.stage === "pickup_revealed"
+      ? "📍 Pickup Revealed"
+      : order.stage === "destination_revealed"
+        ? "🎯 Dest. Revealed"
+        : order.stage === "delivered"
+          ? "✅ Delivered"
+          : "🔒 Hidden";
+
   return (
     <article className={`order-card ${statusTone(order.status)}`}>
       <div className="order-card__main">
@@ -69,12 +101,12 @@ export function OrderCard({
             <strong>{formatMist(order.requiredStakeMist)}</strong>
           </div>
           <div className="metric-cell">
-            <span className="eyebrow">Rep Gate</span>
+            <span className="eyebrow" title="Reputation Required">Min Rep</span>
             <strong>{order.minReputationScore}</strong>
           </div>
           <div className="metric-cell">
             <span className="eyebrow">Stage</span>
-            <strong>{formatStage(order.stage)}</strong>
+            <strong>{stageLabel}</strong>
           </div>
           <div className="metric-cell">
             <span className="eyebrow">Mode</span>
@@ -99,10 +131,16 @@ export function OrderCard({
         <button
           type="button"
           className="button primary"
-          onClick={() => onAccept(order)}
-          disabled={!walletConnected || order.status !== "open"}
+          onClick={handlePrimaryAction}
+          title={
+            !walletConnected
+              ? "Connect your wallet to accept this order."
+              : order.status === "open"
+                ? "Lock stake and accept this route."
+                : "Open the order flow to review progress."
+          }
         >
-          {walletConnected ? "Lock Stake" : "Connect Wallet"}
+          {actionLabel}
         </button>
       </aside>
     </article>

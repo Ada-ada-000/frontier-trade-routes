@@ -6,7 +6,7 @@ import { Providers } from "../components/providers";
 export const metadata: Metadata = {
   title: "Frontier Trade Routes",
   description:
-    "External dApp for trusted frontier intel and verifiable player trade contracts on Sui.",
+    "Privacy-aware frontier logistics terminal with route intelligence, bond-backed orders, and carrier progression on Sui.",
 };
 
 export default function RootLayout({

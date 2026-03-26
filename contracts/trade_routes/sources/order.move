@@ -23,6 +23,7 @@ const E_PRICE_ABOVE_BUDGET: u64 = 10;
 const E_WINNER_NOT_FOUND: u64 = 11;
 const E_DUPLICATE_BID: u64 = 12;
 const E_POLICY_MISMATCH: u64 = 13;
+const E_DEADLINE_NOT_REACHED: u64 = 14;
 
 const MODE_URGENT: u8 = 0;
 const MODE_COMPETITIVE: u8 = 1;
@@ -38,10 +39,21 @@ const STAGE_PICKUP_REVEALED: u8 = 1;
 const STAGE_DESTINATION_REVEALED: u8 = 2;
 const STAGE_DELIVERED: u8 = 3;
 
+const COMMISSION_BRONZE_BPS: u64 = 800;
+const COMMISSION_SILVER_BPS: u64 = 500;
+const COMMISSION_GOLD_BPS: u64 = 300;
+const COMMISSION_ELITE_BPS: u64 = 150;
+
 public struct OrderBook has key {
     id: UID,
     next_order_id: u64,
     open_order_count: u64,
+}
+
+public struct ProtocolTreasury has key {
+    id: UID,
+    accrued_fees: Balance<SUI>,
+    total_commissions_collected: u64,
 }
 
 public struct OrderKey has copy, drop, store {
@@ -143,6 +155,23 @@ public struct DeliveryCompleted has copy, drop {
     payout_amount: u64,
 }
 
+public struct CommissionCharged has copy, drop {
+    order_id: u64,
+    seller: address,
+    tier: u8,
+    fee_bps: u64,
+    fee_amount: u64,
+    seller_payout: u64,
+}
+
+public struct CommissionQuote has copy, drop {
+    seller: address,
+    tier: u8,
+    fee_bps: u64,
+    fee_amount: u64,
+    seller_payout: u64,
+}
+
 public struct OrderDisputed has copy, drop {
     order_id: u64,
     buyer: address,
@@ -155,6 +184,11 @@ fun init(ctx: &mut TxContext) {
         id: object::new(ctx),
         next_order_id: 1,
         open_order_count: 0,
+    });
+    transfer::share_object(ProtocolTreasury {
+        id: object::new(ctx),
+        accrued_fees: balance::zero(),
+        total_commissions_collected: 0,
     });
 }
 
@@ -252,6 +286,16 @@ public fun accept_order(
 
     let seller_score = profile::score_of(profiles, seller);
     assert!(seller_score >= order.min_reputation_score, E_REPUTATION_TOO_LOW);
+    assert!(
+        profile::is_eligible_for_order(
+            profiles,
+            seller,
+            order.min_reputation_score,
+            order.required_stake_amount,
+            order.reward_budget,
+        ),
+        E_REPUTATION_TOO_LOW
+    );
 
     assert!(!contains_bidder(&order.bids, seller), E_DUPLICATE_BID);
     let stake_value = coin::value(&stake_coin);
@@ -412,6 +456,125 @@ public fun complete_delivery(
     });
 }
 
+public fun complete_delivery_with_commission(
+    book: &mut OrderBook,
+    profiles: &mut ProfileRegistry,
+    treasury: &mut ProtocolTreasury,
+    order_id: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    let (buyer, seller, gross_payout, net_payout, seller_tier, fee_bps, fee_amount, stake_amount) = {
+        let order = borrow_order_mut(book, order_id);
+        assert!(tx_context::sender(ctx) == order.buyer, E_BUYER_ONLY);
+        assert!(order.status == STATUS_IN_TRANSIT, E_INVALID_STATUS);
+        assert!(order.stage == STAGE_DESTINATION_REVEALED, E_INVALID_STAGE);
+
+        let seller = order.seller;
+        let buyer = order.buyer;
+        let gross_payout = balance::value(&order.reward_escrow);
+        let stake_amount = balance::value(&order.seller_stake_locked);
+        let seller_tier = profile::tier_of(profiles, seller);
+        let fee_bps = commission_bps_for_tier(seller_tier);
+        let fee_amount = gross_payout * fee_bps / 10_000;
+        let net_payout = gross_payout - fee_amount;
+
+        order.status = STATUS_COMPLETED;
+        order.stage = STAGE_DELIVERED;
+        order.completed_at_ms = clock.timestamp_ms();
+
+        profile::record_success(profiles, seller, stake_amount);
+
+        if (fee_amount > 0) {
+            let fee_balance = balance::split(&mut order.reward_escrow, fee_amount);
+            balance::join(&mut treasury.accrued_fees, fee_balance);
+            treasury.total_commissions_collected = treasury.total_commissions_collected + fee_amount;
+        };
+
+        transfer::public_transfer(coin::from_balance(balance::withdraw_all(&mut order.reward_escrow), ctx), seller);
+        transfer::public_transfer(coin::from_balance(balance::withdraw_all(&mut order.seller_stake_locked), ctx), seller);
+
+        (buyer, seller, gross_payout, net_payout, seller_tier, fee_bps, fee_amount, stake_amount)
+    };
+    let _ = stake_amount;
+    book.open_order_count = book.open_order_count - 1;
+
+    event::emit(CommissionCharged {
+        order_id,
+        seller,
+        tier: seller_tier,
+        fee_bps,
+        fee_amount,
+        seller_payout: net_payout,
+    });
+    event::emit(DeliveryCompleted {
+        order_id,
+        buyer,
+        seller,
+        payout_amount: gross_payout,
+    });
+}
+
+public fun seller_timeout_complete_with_commission(
+    book: &mut OrderBook,
+    profiles: &mut ProfileRegistry,
+    treasury: &mut ProtocolTreasury,
+    order_id: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    let (buyer, seller, gross_payout, net_payout, seller_tier, fee_bps, fee_amount, stake_amount) = {
+        let order = borrow_order_mut(book, order_id);
+        assert!(tx_context::sender(ctx) == order.seller, E_SELLER_ONLY);
+        assert!(order.status == STATUS_IN_TRANSIT, E_INVALID_STATUS);
+        assert!(order.stage == STAGE_DESTINATION_REVEALED, E_INVALID_STAGE);
+        assert!(clock.timestamp_ms() >= order.deadline_ms, E_DEADLINE_NOT_REACHED);
+
+        let seller = order.seller;
+        let buyer = order.buyer;
+        let gross_payout = balance::value(&order.reward_escrow);
+        let stake_amount = balance::value(&order.seller_stake_locked);
+        let seller_tier = profile::tier_of(profiles, seller);
+        let fee_bps = commission_bps_for_tier(seller_tier);
+        let fee_amount = gross_payout * fee_bps / 10_000;
+        let net_payout = gross_payout - fee_amount;
+
+        order.status = STATUS_COMPLETED;
+        order.stage = STAGE_DELIVERED;
+        order.completed_at_ms = clock.timestamp_ms();
+
+        profile::record_success(profiles, seller, stake_amount);
+
+        if (fee_amount > 0) {
+            let fee_balance = balance::split(&mut order.reward_escrow, fee_amount);
+            balance::join(&mut treasury.accrued_fees, fee_balance);
+            treasury.total_commissions_collected = treasury.total_commissions_collected + fee_amount;
+        };
+
+        transfer::public_transfer(coin::from_balance(balance::withdraw_all(&mut order.reward_escrow), ctx), seller);
+        transfer::public_transfer(coin::from_balance(balance::withdraw_all(&mut order.seller_stake_locked), ctx), seller);
+
+        (buyer, seller, gross_payout, net_payout, seller_tier, fee_bps, fee_amount, stake_amount)
+    };
+    let _ = stake_amount;
+    book.open_order_count = book.open_order_count - 1;
+
+    event::emit(CommissionCharged {
+        order_id,
+        seller,
+        tier: seller_tier,
+        fee_bps,
+        fee_amount,
+        seller_payout: net_payout,
+    });
+    event::emit(DeliveryCompleted {
+        order_id,
+        buyer,
+        seller,
+        payout_amount: gross_payout,
+    });
+}
+
 public fun dispute(
     book: &mut OrderBook,
     profiles: &mut ProfileRegistry,
@@ -428,7 +591,6 @@ public fun dispute(
         let seller = order.seller;
         let insured = order.insured;
         let slashed_amount = balance::value(&order.seller_stake_locked);
-        let reward_amount = balance::value(&order.reward_escrow);
 
         order.status = STATUS_DISPUTED;
 
@@ -436,7 +598,6 @@ public fun dispute(
         transfer::public_transfer(coin::from_balance(balance::withdraw_all(&mut order.reward_escrow), ctx), buyer);
 
         if (insured) {
-            insurance::payout_claim(pool, order_id, buyer, reward_amount, ctx);
             insurance::absorb_recovery(pool, order_id, seller, balance::withdraw_all(&mut order.seller_stake_locked));
         } else {
             transfer::public_transfer(coin::from_balance(balance::withdraw_all(&mut order.seller_stake_locked), ctx), buyer);
@@ -477,6 +638,27 @@ public fun public_order_view(book: &OrderBook, order_id: u64): OrderPublicView {
     }
 }
 
+public fun quote_commission(
+    profiles: &mut ProfileRegistry,
+    seller: address,
+    gross_amount: u64,
+): CommissionQuote {
+    let tier = profile::tier_of(profiles, seller);
+    let fee_bps = commission_bps_for_tier(tier);
+    let fee_amount = gross_amount * fee_bps / 10_000;
+    CommissionQuote {
+        seller,
+        tier,
+        fee_bps,
+        fee_amount,
+        seller_payout: gross_amount - fee_amount,
+    }
+}
+
+public fun treasury_total_commissions(treasury: &ProtocolTreasury): u64 {
+    treasury.total_commissions_collected
+}
+
 public fun view_pickup_route(book: &OrderBook, order_id: u64, ctx: &TxContext): vector<u8> {
     let order = borrow_order(book, order_id);
     assert!(tx_context::sender(ctx) == order.seller, E_SELLER_ONLY);
@@ -510,6 +692,18 @@ fun refund_surplus_reward_if_needed(order: &mut Order, ctx: &mut TxContext) {
             order.buyer,
         );
     };
+}
+
+fun commission_bps_for_tier(tier: u8): u64 {
+    if (tier >= 3) {
+        COMMISSION_ELITE_BPS
+    } else if (tier == 2) {
+        COMMISSION_GOLD_BPS
+    } else if (tier == 1) {
+        COMMISSION_SILVER_BPS
+    } else {
+        COMMISSION_BRONZE_BPS
+    }
 }
 
 fun contains_bidder(bids: &vector<BidCandidate>, seller: address): bool {

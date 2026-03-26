@@ -4,7 +4,7 @@ import { TradeRoutesDashboard } from "../../components/trade-routes/trade-routes
 
 export default function AppPage() {
   return (
-    <AppShell>
+    <AppShell showFooter={false} fullViewport>
       <HashScrollHandler />
       <TradeRoutesDashboard />
     </AppShell>

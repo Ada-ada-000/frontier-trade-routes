@@ -22,8 +22,8 @@ export default async function ContractsPage({
         <section className="panel stack panel--subtle" id="contracts">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Support Tool</p>
-              <h1>Contracts</h1>
+              <p className="eyebrow">Trade Terminal</p>
+              <h1>Orders</h1>
             </div>
             <Link href="/app#bidding-pool" className="button tertiary">
               Back to App

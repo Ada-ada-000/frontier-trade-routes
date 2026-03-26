@@ -11,6 +11,21 @@ const TIER_SILVER: u8 = 1;
 const TIER_GOLD: u8 = 2;
 const TIER_ELITE: u8 = 3;
 
+const BRONZE_MIN_SCORE: u64 = 0;
+const SILVER_MIN_SCORE: u64 = 550;
+const GOLD_MIN_SCORE: u64 = 700;
+const ELITE_MIN_SCORE: u64 = 850;
+
+const BRONZE_MIN_STAKE: u64 = 20_000_000_000;
+const SILVER_MIN_STAKE: u64 = 60_000_000_000;
+const GOLD_MIN_STAKE: u64 = 120_000_000_000;
+const ELITE_MIN_STAKE: u64 = 250_000_000_000;
+
+const BRONZE_MAX_ORDER_VALUE: u64 = 150_000_000_000;
+const SILVER_MAX_ORDER_VALUE: u64 = 350_000_000_000;
+const GOLD_MAX_ORDER_VALUE: u64 = 800_000_000_000;
+const ELITE_MAX_ORDER_VALUE: u64 = 2_000_000_000_000;
+
 public struct ProfileRegistry has key {
     id: UID,
     profile_count: u64,
@@ -35,6 +50,13 @@ public struct ProfileView has copy, drop {
     tier: u8,
     active_stake: u64,
     total_slashed: u64,
+}
+
+public struct TierPolicy has copy, drop {
+    tier: u8,
+    min_score: u64,
+    min_stake: u64,
+    max_order_value: u64,
 }
 
 fun init(ctx: &mut TxContext) {
@@ -74,6 +96,42 @@ public fun tier_label(tier: u8): u8 {
     tier
 }
 
+public fun tier_policy(tier: u8): TierPolicy {
+    if (tier == TIER_ELITE) {
+        TierPolicy {
+            tier,
+            min_score: ELITE_MIN_SCORE,
+            min_stake: ELITE_MIN_STAKE,
+            max_order_value: ELITE_MAX_ORDER_VALUE,
+        }
+    } else if (tier == TIER_GOLD) {
+        TierPolicy {
+            tier,
+            min_score: GOLD_MIN_SCORE,
+            min_stake: GOLD_MIN_STAKE,
+            max_order_value: GOLD_MAX_ORDER_VALUE,
+        }
+    } else if (tier == TIER_SILVER) {
+        TierPolicy {
+            tier,
+            min_score: SILVER_MIN_SCORE,
+            min_stake: SILVER_MIN_STAKE,
+            max_order_value: SILVER_MAX_ORDER_VALUE,
+        }
+    } else {
+        TierPolicy {
+            tier: TIER_BRONZE,
+            min_score: BRONZE_MIN_SCORE,
+            min_stake: BRONZE_MIN_STAKE,
+            max_order_value: BRONZE_MAX_ORDER_VALUE,
+        }
+    }
+}
+
+public fun tier_for_score(score: u64, consecutive_failures: u64): u8 {
+    derive_tier(score, consecutive_failures)
+}
+
 public(package) fun ensure_profile(registry: &mut ProfileRegistry, owner: address) {
     if (!df::exists_with_type<address, ReputationProfile>(&registry.id, owner)) {
         df::add(&mut registry.id, owner, default_profile(owner));
@@ -84,6 +142,43 @@ public(package) fun ensure_profile(registry: &mut ProfileRegistry, owner: addres
 public(package) fun score_of(registry: &mut ProfileRegistry, owner: address): u64 {
     ensure_profile(registry, owner);
     df::borrow<address, ReputationProfile>(&registry.id, owner).score
+}
+
+public(package) fun tier_of(registry: &mut ProfileRegistry, owner: address): u8 {
+    ensure_profile(registry, owner);
+    df::borrow<address, ReputationProfile>(&registry.id, owner).tier
+}
+
+public(package) fun active_stake_of(registry: &mut ProfileRegistry, owner: address): u64 {
+    ensure_profile(registry, owner);
+    df::borrow<address, ReputationProfile>(&registry.id, owner).active_stake
+}
+
+public(package) fun is_eligible_for_order(
+    registry: &mut ProfileRegistry,
+    owner: address,
+    min_reputation_score: u64,
+    required_stake: u64,
+    reward_budget: u64,
+): bool {
+    ensure_profile(registry, owner);
+    let profile = df::borrow<address, ReputationProfile>(&registry.id, owner);
+    if (profile.score < min_reputation_score) {
+        return false
+    };
+
+    let policy = tier_policy(profile.tier);
+    // A seller should remain eligible for lower-stake orders; the tier policy is
+    // enforced against the stake they will have locked after accepting.
+    if (profile.active_stake + required_stake < policy.min_stake) {
+        return false
+    };
+
+    if (reward_budget > policy.max_order_value) {
+        return false
+    };
+
+    true
 }
 
 public(package) fun lock_stake(registry: &mut ProfileRegistry, owner: address, amount: u64) {
@@ -165,11 +260,11 @@ fun default_profile(owner: address): ReputationProfile {
 }
 
 fun derive_tier(score: u64, consecutive_failures: u64): u8 {
-    if (consecutive_failures >= 3 || score < 450) {
+    if (consecutive_failures >= 3 || score < SILVER_MIN_SCORE) {
         TIER_BRONZE
-    } else if (score < 650) {
+    } else if (consecutive_failures >= 2 || score < GOLD_MIN_SCORE) {
         TIER_SILVER
-    } else if (score < 850) {
+    } else if (consecutive_failures >= 1 || score < ELITE_MIN_SCORE) {
         TIER_GOLD
     } else {
         TIER_ELITE

@@ -10,10 +10,10 @@ export function ContractsOverview({ contracts }: { contracts: TradeRouteContract
     <section className="panel stack">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Lifecycle</p>
-          <h2>Contract board</h2>
+          <p className="eyebrow">Orders</p>
+          <h2>Order board</h2>
         </div>
-        <span className="subtle">{contracts.length} contracts in local state</span>
+        <span className="subtle">{contracts.length} tracked orders</span>
       </div>
       <div className="contract-table">
         {contracts.map((contract) => (

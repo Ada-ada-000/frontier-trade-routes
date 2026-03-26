@@ -13,6 +13,15 @@ export interface ReputationProfile {
   totalSlashedMist: string;
 }
 
+export interface TierPolicy {
+  tier: number;
+  label: string;
+  minScore: number;
+  minStakeMist: string;
+  maxOrderValueMist: string;
+  commissionBps: number;
+}
+
 export interface OrderPublicView {
   orderId: string;
   buyer: string;
@@ -40,8 +49,14 @@ export interface IntelReportSummary {
   regionFuzzy: string;
   signalKind: number;
   confidenceBps: number;
+  status: "pending" | "confirmed" | "disputed" | "false";
+  supportCount: number;
+  disputeCount: number;
+  linkedOrderCount: number;
+  validationScore: number;
   verified: boolean;
   truthful: boolean;
+  expiresAtMs: string;
 }
 
 export interface InsurancePoolSnapshot {
@@ -74,6 +89,18 @@ export interface TradeRoutesState {
   insurancePoolId?: string;
 }
 
+export interface TradeRoutesSnapshot {
+  orders: OrderPublicView[];
+  heatmap: HeatmapTile[];
+  profiles: ReputationProfile[];
+  intelReports: IntelReportSummary[];
+  tierPolicies: TierPolicy[];
+  insurancePool: InsurancePoolSnapshot;
+  commissionScheduleBps: Record<string, number>;
+  generatedAt: string;
+  source: "mock-indexer";
+}
+
 export function formatAddress(value: string) {
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
 }
@@ -101,4 +128,17 @@ export function formatStatus(status: OrderStatus) {
     return "In transit";
   }
   return status.replace("_", " ");
+}
+
+export function formatTierLabel(tier: number) {
+  if (tier >= 3) {
+    return "Elite";
+  }
+  if (tier === 2) {
+    return "Gold";
+  }
+  if (tier === 1) {
+    return "Silver";
+  }
+  return "Bronze";
 }

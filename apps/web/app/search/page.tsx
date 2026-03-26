@@ -1,16 +1,12 @@
 import Link from "next/link";
 import {
   contractTypeLabels,
-  intelEventLabels,
   mockContracts,
-  mockIntelEvents,
-  mockRegionStatuses,
   recommendedContractType,
-  riskLevelLabels,
 } from "@eve/shared";
 import { AppShell } from "../../components/app-shell";
 import { MockOpportunitiesAdapter, getOpportunitiesAdapter } from "../../lib/opportunities";
-import { mockOrders } from "../../lib/trade-routes/mock-data";
+import { getTradeRoutesSnapshot } from "../../lib/trade-routes/server-data";
 
 function normalize(value: string) {
   return value.trim().toLowerCase();
@@ -40,8 +36,9 @@ export default async function SearchPage({
     .catch(async () => {
       return new MockOpportunitiesAdapter().list();
     });
+  const snapshot = await getTradeRoutesSnapshot();
 
-  const matchingOrders = mockOrders.filter((order) =>
+  const matchingOrders = snapshot.orders.filter((order) =>
     includesQuery(
       [order.originFuzzy, order.destinationFuzzy, order.cargoHint, order.orderMode, order.status],
       query,
@@ -62,16 +59,16 @@ export default async function SearchPage({
     ),
   );
 
-  const matchingIntel = mockIntelEvents.filter((event) =>
+  const matchingIntel = snapshot.intelReports.filter((report) =>
     includesQuery(
-      [event.regionName, event.resourceName, event.title, event.summary, event.type],
+      [report.regionFuzzy, report.orderHint, report.status],
       query,
     ),
   );
 
-  const matchingRegions = mockRegionStatuses.filter((region) =>
+  const matchingRegions = snapshot.heatmap.filter((region) =>
     includesQuery(
-      [region.regionName, region.dominantResource, region.summary, region.securityLevel],
+      [region.region],
       query,
     ),
   );
@@ -100,7 +97,7 @@ export default async function SearchPage({
           <section className="panel stack">
             <div className="empty-state">
               <strong>Search by region or resource</strong>
-              <p className="muted">Try The Forge, Geminate, Refined Gas, or Rare Alloy.</p>
+              <p className="muted">Try O3H-1FN, EH1-FQC, Rare Alloy, or isotopes.</p>
             </div>
           </section>
         ) : null}
@@ -152,11 +149,11 @@ export default async function SearchPage({
           <section className="panel stack">
             <div className="section-head">
               <div>
-                <p className="eyebrow">Contracts</p>
-                <h2>Matching contracts</h2>
+                <p className="eyebrow">Orders</p>
+                <h2>Matching order details</h2>
               </div>
               <Link href="/contracts#contracts" className="button secondary">
-                Open Contracts
+                Open Orders
               </Link>
             </div>
             <div className="search-grid">
@@ -175,7 +172,7 @@ export default async function SearchPage({
                   <div className="card-actions">
                     <span className="subtle">{contract.id}</span>
                     <Link href={`/contracts/${contract.id}`} className="button primary">
-                      Open contract
+                      Open order
                     </Link>
                   </div>
                 </article>
@@ -215,7 +212,7 @@ export default async function SearchPage({
                         href={`/contracts?type=${suggestedType}&resource=${encodeURIComponent(opportunity.resourceName)}&region=${encodeURIComponent(opportunity.regionName)}`}
                         className="button primary"
                       >
-                        Create contract
+                        Post order
                       </Link>
                     </div>
                   </article>
@@ -229,23 +226,25 @@ export default async function SearchPage({
           <section className="panel stack">
             <div className="section-head">
               <div>
-                <p className="eyebrow">Intel Events</p>
-                <h2>Recent reports</h2>
+                <p className="eyebrow">Intel Reports</p>
+                <h2>Community intelligence</h2>
               </div>
             </div>
             <div className="search-grid">
               {matchingIntel.map((event) => (
-                <article key={event.id} className="search-card">
+                <article key={event.reportId} className="search-card">
                   <div className="table-card__header">
                     <div>
-                      <p className="eyebrow">{intelEventLabels[event.type]}</p>
-                      <strong>{event.title}</strong>
+                      <p className="eyebrow">Intel report</p>
+                      <strong>{event.regionFuzzy}</strong>
                     </div>
-                    <span className="status-pill">{riskLevelLabels[event.riskLevel]}</span>
+                    <span className="status-pill">{event.status}</span>
                   </div>
-                  <p className="muted">{event.regionName}</p>
+                  <p className="muted">
+                    Confidence {(event.confidenceBps / 100).toFixed(0)}% · {event.supportCount} support
+                  </p>
                   <div className="card-actions">
-                    <span className="subtle">{event.resourceName ?? "Intel"}</span>
+                    <span className="subtle">{event.disputeCount} dispute</span>
                     <Link href="/opportunities#intel" className="button secondary">
                       Open feed
                     </Link>
@@ -266,19 +265,21 @@ export default async function SearchPage({
             </div>
             <div className="search-grid">
               {matchingRegions.map((region) => (
-                <article key={region.id} className="search-card">
+                <article key={region.region} className="search-card">
                   <div className="table-card__header">
                     <div>
-                      <p className="eyebrow">{region.dominantResource}</p>
-                      <strong>{region.regionName}</strong>
+                      <p className="eyebrow">Region pressure</p>
+                      <strong>{region.region}</strong>
                     </div>
-                    <span className="status-pill">{riskLevelLabels[region.securityLevel]}</span>
+                    <span className="status-pill">Heat {region.intensity}</span>
                   </div>
-                  <p className="muted">{region.summary}</p>
+                  <p className="muted">
+                    {region.demandCount} routes · {region.urgentCount} urgent · {region.insuredCount} insured
+                  </p>
                   <div className="card-actions">
-                    <span className="subtle">Pressure {region.resourcePressure}</span>
+                    <span className="subtle">Pressure {region.intensity}</span>
                     <Link
-                      href={`/contracts?resource=${encodeURIComponent(region.dominantResource)}&region=${encodeURIComponent(region.regionName)}`}
+                      href={`/contracts?region=${encodeURIComponent(region.region)}`}
                       className="button primary"
                     >
                       Open route

@@ -4,6 +4,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: path.resolve(__dirname, "../.."),
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
+  experimental: {
+    devtoolSegmentExplorer: false,
+  },
 };
 
 export default nextConfig;

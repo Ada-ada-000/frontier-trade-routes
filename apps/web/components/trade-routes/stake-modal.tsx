@@ -27,6 +27,7 @@ export function StakeModal({
 }) {
   const [quotedPriceMist, setQuotedPriceMist] = useState("");
   const [stakeCoinObjectId, setStakeCoinObjectId] = useState("");
+  const [validationError, setValidationError] = useState("");
 
   useEffect(() => {
     if (!order) {
@@ -36,6 +37,7 @@ export function StakeModal({
     setQuotedPriceMist(order.quotedPriceMist);
     const eligible = coins.find((coin) => BigInt(coin.balanceMist) >= BigInt(order.requiredStakeMist));
     setStakeCoinObjectId(eligible?.objectId ?? "");
+    setValidationError("");
   }, [coins, order]);
 
   if (!open || !order) {
@@ -44,16 +46,39 @@ export function StakeModal({
 
   const eligibleCoins = coins.filter((coin) => BigInt(coin.balanceMist) >= BigInt(order.requiredStakeMist));
 
+  async function handleConfirm() {
+    if (!order) {
+      return;
+    }
+
+    if (!quotedPriceMist.trim()) {
+      setValidationError("Enter a quoted price before submitting.");
+      return;
+    }
+
+    if (!stakeCoinObjectId) {
+      setValidationError("Select an eligible wallet coin to lock stake.");
+      return;
+    }
+
+    setValidationError("");
+    await onConfirm({
+      orderId: order.orderId,
+      quotedPriceMist,
+      stakeCoinObjectId,
+    });
+  }
+
   return (
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <div className="modal-panel" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
         <div className="section-head">
           <div>
-            <p className="eyebrow">Execution lock</p>
-            <h3>Accept route order #{order.orderId}</h3>
+            <p className="eyebrow">Order Command</p>
+            <h3>Take route order #{order.orderId}</h3>
           </div>
           <button type="button" className="button secondary" onClick={onClose}>
-            Close
+            Stand Down
           </button>
         </div>
 
@@ -80,7 +105,7 @@ export function StakeModal({
 
         <div className="modal-form">
           <label className="modal-field">
-            <span className="eyebrow">Quoted price (mist)</span>
+            <span className="eyebrow">Your Quote</span>
             <input
               value={quotedPriceMist}
               onChange={(event) => setQuotedPriceMist(event.target.value)}
@@ -88,7 +113,7 @@ export function StakeModal({
             />
           </label>
           <label className="modal-field">
-            <span className="eyebrow">Stake coin object</span>
+            <span className="eyebrow">Funding Coin</span>
             <select value={stakeCoinObjectId} onChange={(event) => setStakeCoinObjectId(event.target.value)}>
               <option value="">Select eligible wallet coin</option>
               {eligibleCoins.map((coin) => (
@@ -105,29 +130,26 @@ export function StakeModal({
           <ul className="sequence-list compact">
             <li>Stake locks before command execution completes.</li>
             <li>Coordinates remain staged and are not fully revealed in public view.</li>
-            <li>Insurance and slashing may apply depending on fulfillment outcome.</li>
+            <li>Insurance and penalties may apply depending on fulfillment outcome.</li>
           </ul>
         </div>
 
+        {validationError ? <div className="feedback error">{validationError}</div> : null}
         {error ? <div className="feedback error">{error}</div> : null}
 
         <div className="modal-actions">
           <button type="button" className="button secondary" onClick={onClose}>
-            Abort
+            Stand Down
           </button>
           <button
             type="button"
             className="button primary"
-            disabled={busy || !stakeCoinObjectId || !quotedPriceMist}
-            onClick={() =>
-              onConfirm({
-                orderId: order.orderId,
-                quotedPriceMist,
-                stakeCoinObjectId,
-              })
-            }
+            disabled={busy}
+            onClick={() => {
+              void handleConfirm();
+            }}
           >
-            {busy ? "Submitting..." : "Execute accept_order"}
+            {busy ? "Locking bond..." : "Lock Bond & Take Order"}
           </button>
         </div>
       </div>

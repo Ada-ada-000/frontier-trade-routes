@@ -8,17 +8,45 @@ import { Transaction } from "@mysten/sui/transactions";
 import {
   mockHeatmapTiles,
   mockInsurancePool,
+  mockIntelReports,
   mockOrders,
   mockReputationProfiles,
+  mockTierPolicies,
 } from "./mock-data";
+import { buildHeatmap } from "./derive";
 import type {
   AcceptOrderInput,
-  HeatmapTile,
   OrderPublicView,
+  TradeRoutesSnapshot,
   TradeRoutesState,
 } from "./types";
 
 const CLOCK_OBJECT_ID = "0x6";
+
+function mergeHeatmapTiles(...sets: Array<Array<{ region: string; intensity: number; demandCount: number; insuredCount: number; urgentCount: number }>>) {
+  const merged = new Map<string, { region: string; intensity: number; demandCount: number; insuredCount: number; urgentCount: number }>();
+
+  for (const set of sets) {
+    for (const tile of set) {
+      const current = merged.get(tile.region) ?? {
+        region: tile.region,
+        intensity: 0,
+        demandCount: 0,
+        insuredCount: 0,
+        urgentCount: 0,
+      };
+
+      current.intensity = Math.max(current.intensity, tile.intensity);
+      current.demandCount = Math.max(current.demandCount, tile.demandCount);
+      current.insuredCount = Math.max(current.insuredCount, tile.insuredCount);
+      current.urgentCount = Math.max(current.urgentCount, tile.urgentCount);
+
+      merged.set(tile.region, current);
+    }
+  }
+
+  return [...merged.values()];
+}
 
 function envState(walletAddress?: string): TradeRoutesState {
   return {
@@ -124,38 +152,6 @@ function parseOrderObject(object: SuiObjectResponse): OrderPublicView | null {
   };
 }
 
-function buildHeatmap(orders: OrderPublicView[]): HeatmapTile[] {
-  const bucket = new Map<string, HeatmapTile>();
-
-  for (const order of orders) {
-    for (const region of [order.originFuzzy, order.destinationFuzzy]) {
-      const current = bucket.get(region) ?? {
-        region,
-        intensity: 0,
-        demandCount: 0,
-        insuredCount: 0,
-        urgentCount: 0,
-      };
-
-      current.demandCount += 1;
-      current.intensity += order.orderMode === "urgent" ? 24 : 16;
-      if (order.insured) {
-        current.insuredCount += 1;
-        current.intensity += 8;
-      }
-      if (order.orderMode === "urgent") {
-        current.urgentCount += 1;
-      }
-
-      bucket.set(region, current);
-    }
-  }
-
-  return [...bucket.values()]
-    .map((item) => ({ ...item, intensity: Math.min(item.intensity, 100) }))
-    .sort((left, right) => right.intensity - left.intensity);
-}
-
 export function useTradeRoutes() {
   const account = useCurrentAccount();
   const client = useSuiClient();
@@ -163,10 +159,33 @@ export function useTradeRoutes() {
   const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
   const state = envState(account?.address);
 
+  const snapshotQuery = useQuery({
+    queryKey: ["trade-routes", "snapshot", state.mode],
+    queryFn: async () => {
+      if (state.mode !== "mock") {
+        return null;
+      }
+
+      const response = await fetch("/api/trade-routes/snapshot", {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to load trade routes snapshot.");
+      }
+
+      return (await response.json()) as TradeRoutesSnapshot;
+    },
+    enabled: state.mode === "mock",
+    staleTime: 20_000,
+  });
+
   const ordersQuery = useQuery({
     queryKey: ["trade-routes", "orders", state.mode, state.orderBookId],
     queryFn: async () => {
-      if (state.mode === "mock" || !state.orderBookId) {
+      if (state.mode === "mock") {
+        return snapshotQuery.data?.orders ?? mockOrders;
+      }
+      if (!state.orderBookId) {
         return mockOrders;
       }
 
@@ -190,6 +209,7 @@ export function useTradeRoutes() {
         .sort((left, right) => Number(right.createdAtMs) - Number(left.createdAtMs));
     },
     staleTime: 20_000,
+    enabled: state.mode === "mock" ? snapshotQuery.status !== "pending" : true,
   });
 
   const ownedCoinsQuery = useQuery({
@@ -215,6 +235,27 @@ export function useTradeRoutes() {
   const acceptOrder = useMutation({
     mutationFn: async (input: AcceptOrderInput) => {
       if (state.mode === "mock") {
+        if (!account?.address) {
+          throw new Error("Connect a wallet before accepting an order.");
+        }
+
+        const response = await fetch("/api/trade-routes/orders/accept", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            orderId: input.orderId,
+            quotedPriceMist: input.quotedPriceMist,
+            seller: account.address,
+          }),
+        });
+
+        const payload = (await response.json()) as { error?: string };
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Failed to accept order.");
+        }
+
         return { digest: `mock-accept-${input.orderId}` };
       }
       if (!state.packageId || !state.orderBookId || !state.profileRegistryId) {
@@ -241,26 +282,44 @@ export function useTradeRoutes() {
     },
     onSuccess: async () => {
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["trade-routes", "snapshot"] }),
         queryClient.invalidateQueries({ queryKey: ["trade-routes", "orders"] }),
         queryClient.invalidateQueries({ queryKey: ["trade-routes", "coins"] }),
       ]);
     },
   });
 
-  const orders = useDeferredValue(ordersQuery.data ?? mockOrders);
-  const heatmap = orders.length > 0 ? buildHeatmap(orders) : mockHeatmapTiles;
+  const orders = useDeferredValue(ordersQuery.data ?? snapshotQuery.data?.orders ?? mockOrders);
+  const heatmap = snapshotQuery.data?.heatmap
+    ? mergeHeatmapTiles(mockHeatmapTiles, snapshotQuery.data.heatmap)
+    : mergeHeatmapTiles(mockHeatmapTiles, orders.length > 0 ? buildHeatmap(orders) : []);
+  const profiles = snapshotQuery.data?.profiles ?? mockReputationProfiles;
+  const intelReports = snapshotQuery.data?.intelReports ?? mockIntelReports;
+  const tierPolicies = snapshotQuery.data?.tierPolicies ?? mockTierPolicies;
+  const insurancePool = snapshotQuery.data?.insurancePool ?? mockInsurancePool;
+  const commissionScheduleBps = snapshotQuery.data?.commissionScheduleBps ?? {
+    bronze: 800,
+    silver: 500,
+    gold: 300,
+    elite: 150,
+  };
 
   return {
     ...state,
     orders,
     heatmap,
-    profiles: mockReputationProfiles,
-    insurancePool: mockInsurancePool,
+    profiles,
+    intelReports,
+    tierPolicies,
+    insurancePool,
+    commissionScheduleBps,
     ownedCoins: ownedCoinsQuery.data ?? [],
-    isLoading: ordersQuery.isLoading,
+    isLoading: ordersQuery.isLoading || snapshotQuery.isLoading,
     isAccepting: acceptOrder.isPending,
     acceptError: acceptOrder.error instanceof Error ? acceptOrder.error.message : undefined,
-    refresh: ordersQuery.refetch,
+    refresh: async () => {
+      await Promise.all([snapshotQuery.refetch(), ordersQuery.refetch()]);
+    },
     acceptOrder: acceptOrder.mutateAsync,
   };
 }

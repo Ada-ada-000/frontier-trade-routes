@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   contractTypeLabels,
-  describePrivacy,
   recommendedContractType,
   riskLevelLabels,
   type Opportunity,
@@ -24,7 +23,7 @@ export function RegionStatusBoard({
       <div className="section-head">
         <div>
           <p className="eyebrow">Region status</p>
-          <h2>Trade-critical frontier regions</h2>
+          <h2>Priority trade regions</h2>
         </div>
         <span className="subtle">Region-level aggregation only</span>
       </div>
@@ -62,20 +61,19 @@ export function RegionStatusBoard({
                 </div>
                 <div>
                   <dt>Fleet activity</dt>
-                <dd>{region.fleetActivity}</dd>
-              </div>
+                  <dd>{region.fleetActivity}</dd>
+                </div>
               </dl>
-              <p className="muted small-copy">{describePrivacy(region.privacy)}</p>
-              <div className="recommend-band">
-                <span className="eyebrow">Recommended contract</span>
-                <strong>{contractTypeLabels[suggestedType]}</strong>
-              </div>
-              <div className="card-actions">
+              <div className="card-footer">
+                <div className="card-footer__meta">
+                  <span className="eyebrow">Best action</span>
+                  <strong>{contractTypeLabels[suggestedType]}</strong>
+                </div>
                 <Link
                   href={`/contracts?type=${suggestedType}&resource=${encodeURIComponent(region.dominantResource)}&region=${encodeURIComponent(region.regionName)}`}
-                  className="button primary"
+                  className="button secondary"
                 >
-                  Create contract
+                  Post order
                 </Link>
               </div>
             </article>

@@ -5,8 +5,8 @@ export function Footer() {
         <strong>Frontier Trade Routes</strong>
       </div>
       <div className="app-footer__meta">
-        <span>Mock / Testnet Ready</span>
-        <span>Region-only intel. Exact coordinates stay gated.</span>
+        <span>Region-only intelligence</span>
+        <span>Exact coordinates stay gated</span>
       </div>
     </footer>
   );

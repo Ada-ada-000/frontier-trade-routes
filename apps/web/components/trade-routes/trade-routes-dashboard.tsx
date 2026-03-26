@@ -1,22 +1,29 @@
 "use client";
 
-import { startTransition, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { HeatmapLayer } from "./heatmap-layer";
-import Link from "next/link";
-import { OrderCard } from "./order-card";
 import { StakeModal } from "./stake-modal";
 import { useTradeRoutes } from "../../lib/trade-routes/use-trade-routes";
-import type { OrderPublicView } from "../../lib/trade-routes/types";
+import { formatMist, type OrderPublicView } from "../../lib/trade-routes/types";
+import { StatusBadge } from "../ui/status-badge";
+import { mapPoints } from "../../lib/trade-routes/map-scene";
 
 function sumStake(orders: OrderPublicView[]) {
   return orders.reduce((total, order) => total + Number(order.requiredStakeMist), 0);
 }
 
+function formatDeadline(value: string) {
+  return new Date(Number(value)).toLocaleDateString();
+}
+
 export function TradeRoutesDashboard() {
+  const router = useRouter();
   const account = useCurrentAccount();
   const tradeRoutes = useTradeRoutes();
   const [selectedOrder, setSelectedOrder] = useState<OrderPublicView | undefined>();
+  const [activeRegion, setActiveRegion] = useState("");
 
   const metrics = useMemo(() => {
     const openOrders = tradeRoutes.orders.filter((order) => order.status === "open").length;
@@ -26,170 +33,173 @@ export function TradeRoutesDashboard() {
     return { openOrders, insured, totalStake };
   }, [tradeRoutes.orders]);
 
+  const filteredOrders = useMemo(() => {
+    if (!activeRegion) {
+      return [];
+    }
+
+    return tradeRoutes.orders.filter(
+      (order) => order.originFuzzy === activeRegion || order.destinationFuzzy === activeRegion,
+    );
+  }, [activeRegion, tradeRoutes.orders]);
+
+  const activeSummary = useMemo(() => {
+    if (!activeRegion) {
+      return null;
+    }
+    const relatedOrders = filteredOrders;
+    const insuredRoutes = relatedOrders.filter((order) => order.insured).length;
+    const rewardTotal = relatedOrders.reduce(
+      (sum, order) => sum + Number(order.rewardBudgetMist) / 1_000_000_000,
+      0,
+    );
+    return {
+      routes: relatedOrders.length,
+      insuredRoutes,
+      rewardTotal,
+    };
+  }, [activeRegion, filteredOrders]);
+
+  const activeSystem = useMemo(
+    () => mapPoints.find((point) => point.id === activeRegion && point.kind === "region"),
+    [activeRegion],
+  );
+
   return (
     <>
-      <section className="dashboard-hero panel stack" id="overview">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">Primary Console</p>
-            <h1>Heatmap in. Route out.</h1>
-          </div>
-          <div className="hero-badge">Main Route Surface</div>
-        </div>
-        <div className="metric-grid">
-          <article className="metric-card">
-            <p className="eyebrow">Mode</p>
-            <strong>{tradeRoutes.mode.toUpperCase()}</strong>
-            <span>{tradeRoutes.mode === "sui" ? "Live queue" : "Mock queue"}</span>
-          </article>
-          <article className="metric-card">
-            <p className="eyebrow">Open</p>
-            <strong>{metrics.openOrders}</strong>
-            <span>Visible route tasks</span>
-          </article>
-          <article className="metric-card">
-            <p className="eyebrow">Stake</p>
-            <strong>{metrics.totalStake.toFixed(0)} SUI</strong>
-            <span>Capital locked</span>
-          </article>
-          <article className="metric-card">
-            <p className="eyebrow">Insured</p>
-            <strong>{metrics.insured}</strong>
-            <span>Recovery-ready jobs</span>
-          </article>
-        </div>
-        <div className="rule-strip">
-          <Link href="/app#heatmap">Fuzzy Heatmap</Link>
-          <Link href="/app#bidding-pool">Weighted Bidding Pool</Link>
-          <Link href="/app#staged-reveal">Staged Reveal</Link>
-          <Link href="/app/reputation#reputation">Reputation</Link>
-          <Link href="/app/insurance#insurance">Insurance</Link>
-        </div>
-      </section>
+      <section className="operations-screen" id="overview">
+        <HeatmapLayer
+          data={tradeRoutes.heatmap}
+          activeRegion={activeRegion || undefined}
+          onSelectRegion={(regionName) => setActiveRegion(regionName)}
+          metrics={metrics}
+        />
 
-      <div className="dashboard-grid">
-        <HeatmapLayer data={tradeRoutes.heatmap} />
-        <section className="panel stack" id="bidding-pool">
-          <div className="section-head">
+        <aside className={`route-drawer ${activeRegion ? "is-open" : ""}`} aria-hidden={!activeRegion}>
+          <div className="route-drawer__head">
             <div>
-              <p className="eyebrow">Order market</p>
-              <h2>Seller-visible route queue</h2>
+              <p className="eyebrow">Frontier system</p>
+              <h2>{activeRegion || "System Orders"}</h2>
             </div>
-            <button type="button" className="button secondary" onClick={() => void tradeRoutes.refresh()}>
-              Refresh Queue
-            </button>
+            <div className="button-group">
+              {activeSystem ? (
+                <a
+                  className="button tertiary"
+                  href={`https://ef-map.com/solar-system/${activeSystem.solarSystemId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Frontier Map
+                </a>
+              ) : null}
+              <button
+                type="button"
+                className="button tertiary"
+                onClick={() => router.push(`/opportunities#intel`)}
+              >
+                Open Intel
+              </button>
+              <button type="button" className="button tertiary" onClick={() => setActiveRegion("")}>
+                Close
+              </button>
+            </div>
           </div>
-          <div className="order-stack">
-            {tradeRoutes.orders.map((order) => (
-              <OrderCard
-                key={order.orderId}
-                order={order}
-                walletConnected={Boolean(account?.address)}
-                onAccept={(nextOrder) => {
-                  startTransition(() => setSelectedOrder(nextOrder));
-                }}
-              />
-            ))}
-          </div>
-        </section>
-      </div>
 
-      <section className="panel stack" id="staged-reveal">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">Staged Reveal</p>
-            <h2>Route visibility</h2>
-          </div>
-          <Link href="/contracts" className="button secondary">
-            Contract Flow
-          </Link>
-        </div>
-        <div className="timeline-grid">
-          <article className="table-card">
-            <div className="table-card__header">
-              <strong>01. Accept order</strong>
-              <span className="status-pill is-open">Stake locked</span>
-            </div>
-            <p className="muted">Lock first.</p>
-          </article>
-          <article className="table-card">
-            <div className="table-card__header">
-              <strong>02. Pickup revealed</strong>
-              <span className="status-pill is-assigned">Stage one</span>
-            </div>
-            <p className="muted">Pickup only.</p>
-          </article>
-          <article className="table-card">
-            <div className="table-card__header">
-              <strong>03. Pickup confirmed</strong>
-              <span className="status-pill is-transit">Stage two</span>
-            </div>
-            <p className="muted">Destination opens.</p>
-          </article>
-          <article className="table-card">
-            <div className="table-card__header">
-              <strong>04. Complete or dispute</strong>
-              <span className="status-pill is-disputed">Resolution</span>
-            </div>
-            <p className="muted">Release or recover.</p>
-          </article>
-        </div>
-      </section>
-
-      <div className="dashboard-grid dashboard-grid--aux">
-        <section className="panel stack aux-panel" id="reputation-preview">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Reputation</p>
-              <h2>Carrier access</h2>
-            </div>
-            <Link href="/app/reputation" className="button secondary">
-              Open
-            </Link>
-          </div>
-          <div className="meta-strip">
-            {tradeRoutes.profiles.slice(0, 3).map((profile) => (
-              <div className="meta-chip" key={profile.owner}>
-                <span className="eyebrow">Tier {profile.tier}</span>
-                <strong>{profile.score}</strong>
-                <span>{profile.successCount} completed</span>
+          <div className="route-drawer__body">
+            {filteredOrders.length === 0 ? (
+              <div className="route-drawer__empty">
+                <strong>No visible routes</strong>
+                <p className="muted">This system is mapped, but no active route orders are attached right now.</p>
               </div>
-            ))}
-          </div>
-        </section>
+            ) : (
+              <>
+                {activeSummary ? (
+                  <article className="route-drawer__card route-drawer__card--summary">
+                    <div className="route-drawer__grid">
+                      <div className="side-block">
+                        <span className="eyebrow">Visible routes</span>
+                        <strong>{activeSummary.routes}</strong>
+                      </div>
+                      <div className="side-block">
+                        <span className="eyebrow">Protected jobs</span>
+                        <strong>{activeSummary.insuredRoutes}</strong>
+                      </div>
+                      <div className="side-block">
+                        <span className="eyebrow">Reward volume</span>
+                        <strong>{activeSummary.rewardTotal.toFixed(0)} SUI</strong>
+                      </div>
+                    </div>
+                    <div className="button-group route-drawer__actions">
+                      <button
+                        type="button"
+                        className="button tertiary"
+                        onClick={() => router.push(`/contracts?region=${encodeURIComponent(activeRegion)}`)}
+                      >
+                        Open Orders
+                      </button>
+                      <button
+                        type="button"
+                        className="button tertiary"
+                        onClick={() => router.push(`/contracts?region=${encodeURIComponent(activeRegion)}&intent=deliver`)}
+                      >
+                        Post for this system
+                      </button>
+                    </div>
+                  </article>
+                ) : null}
 
-        <section className="panel stack aux-panel" id="insurance-preview">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Insurance</p>
-              <h2>Recovery pool</h2>
-            </div>
-            <Link href="/app/insurance" className="button secondary">
-              Open
-            </Link>
+                {filteredOrders.map((order) => (
+                  <article key={order.orderId} className="route-drawer__card">
+                    <div className="route-drawer__card-head">
+                      <div>
+                        <p className="eyebrow">Order #{order.orderId}</p>
+                        <strong>{order.cargoHint}</strong>
+                      </div>
+                      <StatusBadge label={order.status === "assigned" ? "Accepted" : order.status} />
+                    </div>
+                    <div className="route-drawer__grid">
+                      <div className="side-block">
+                        <span className="eyebrow">Route window</span>
+                        <strong>{order.originFuzzy} → {order.destinationFuzzy}</strong>
+                      </div>
+                      <div className="side-block">
+                        <span className="eyebrow">Reward</span>
+                        <strong className="route-drawer__reward">{formatMist(order.rewardBudgetMist)}</strong>
+                      </div>
+                      <div className="side-block">
+                        <span className="eyebrow">Deadline</span>
+                        <strong>{formatDeadline(order.deadlineMs)}</strong>
+                      </div>
+                    </div>
+                    <div className="button-group route-drawer__actions">
+                      <button
+                        type="button"
+                        className="button tertiary"
+                        onClick={() => router.push("/contracts")}
+                      >
+                        View Order
+                      </button>
+                      <button
+                        type="button"
+                        className="button primary"
+                        onClick={() => {
+                          if (!account?.address) {
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                            return;
+                          }
+                          setSelectedOrder(order);
+                        }}
+                      >
+                        Accept Order
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </>
+            )}
           </div>
-          <div className="meta-strip">
-            <div className="meta-chip">
-              <span className="eyebrow">Pool Capital</span>
-              <strong>
-                {(Number(tradeRoutes.insurancePool.capitalMist) / 1_000_000_000).toFixed(0)} SUI
-              </strong>
-            </div>
-            <div className="meta-chip">
-              <span className="eyebrow">Premiums</span>
-              <strong>
-                {(Number(tradeRoutes.insurancePool.totalPremiumsCollectedMist) / 1_000_000_000).toFixed(0)} SUI
-              </strong>
-            </div>
-            <div className="meta-chip">
-              <span className="eyebrow">Recoveries</span>
-              <strong>
-                {(Number(tradeRoutes.insurancePool.totalRecoveriesMist) / 1_000_000_000).toFixed(0)} SUI
-              </strong>
-            </div>
-          </div>
-        </section>
-      </div>
+        </aside>
+      </section>
 
       <StakeModal
         open={Boolean(selectedOrder)}

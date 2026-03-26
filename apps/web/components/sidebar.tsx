@@ -41,12 +41,12 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
         <div className="sidebar-footer">
           <div className="sidebar-meta">
-            <span className="eyebrow">Network</span>
-            <strong>Mock / Testnet Ready</strong>
+            <span className="eyebrow">Status</span>
+            <strong>Online</strong>
           </div>
           <div className="sidebar-meta">
-            <span className="eyebrow">Disclosure</span>
-            <strong>Region-only in public view</strong>
+            <span className="eyebrow">Visibility</span>
+            <strong>Region-only public view</strong>
           </div>
         </div>
       </aside>

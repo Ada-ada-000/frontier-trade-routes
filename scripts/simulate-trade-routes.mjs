@@ -4,6 +4,12 @@ const sellers = [
   { name: "Rust Haul", reputation: 430, stake: 75, tier: "bronze" },
 ];
 
+const tierPolicies = {
+  bronze: { minScore: 0, commissionBps: 800, maxOrderValue: 150 },
+  silver: { minScore: 550, commissionBps: 500, maxOrderValue: 350 },
+  gold: { minScore: 700, commissionBps: 300, maxOrderValue: 800 },
+};
+
 const buyers = [
   {
     name: "Forge Arbitrage Desk",
@@ -55,6 +61,22 @@ const chainState = {
     totalClaims: 0,
     totalRecoveries: 0,
   },
+  treasury: {
+    totalCommissions: 0,
+  },
+  intelReports: [
+    {
+      reportId: 201,
+      region: "The Forge",
+      reporter: "Rust Haul",
+      confidence: 84,
+      support: 0,
+      dispute: 0,
+      linkedOrders: 0,
+      status: "pending",
+      validationScore: 0,
+    },
+  ],
 };
 
 function printState(title) {
@@ -70,6 +92,15 @@ function publishOrders() {
     }
   });
   printState("Orders published");
+}
+
+function validateIntel() {
+  const report = chainState.intelReports[0];
+  report.support += 3;
+  report.linkedOrders += 2;
+  report.validationScore = 15 * report.support + 20 * report.linkedOrders + Math.floor(report.confidence / 10);
+  report.status = report.validationScore >= 80 ? "confirmed" : "disputed";
+  printState("Intel report validated by support and order evidence");
 }
 
 function acceptUrgentOrder() {
@@ -112,15 +143,24 @@ function confirmPickup() {
 
 function completeDelivery() {
   const order = chainState.orders.find((item) => item.orderId === 101);
+  const seller = sellers.find((item) => item.name === "Selene Freight");
+  const commissionBps = tierPolicies[seller.tier].commissionBps;
+  const commission = Math.round((order.quotedPrice * commissionBps) / 10_000);
+  const sellerPayout = order.quotedPrice - commission;
   order.status = "completed";
   order.stage = "delivered";
   chainState.profiles["Selene Freight"].activeStake -= order.minStake;
   chainState.profiles["Selene Freight"].successCount += 1;
   chainState.profiles["Selene Freight"].score += 15;
-  printState("Delivery completed, stake released, reputation updated");
+  chainState.treasury.totalCommissions += commission;
+  order.commissionBps = commissionBps;
+  order.commission = commission;
+  order.sellerPayout = sellerPayout;
+  printState("Delivery completed, commission collected, reputation updated");
 }
 
 publishOrders();
+validateIntel();
 acceptUrgentOrder();
 placeCompetitiveBids();
 selectBidWinner();

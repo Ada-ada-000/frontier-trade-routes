@@ -1,11 +1,17 @@
 import { AppShell } from "../../../components/app-shell";
 import { InsurancePanel } from "../../../components/trade-routes/insurance-panel";
-import { mockInsurancePool, mockOrders } from "../../../lib/trade-routes/mock-data";
+import { getTradeRoutesSnapshot } from "../../../lib/trade-routes/server-data";
 
-export default function InsurancePage() {
+export default async function InsurancePage() {
+  const snapshot = await getTradeRoutesSnapshot();
+
   return (
     <AppShell>
-      <InsurancePanel insurancePool={mockInsurancePool} orders={mockOrders} />
+      <InsurancePanel
+        insurancePool={snapshot.insurancePool}
+        orders={snapshot.orders}
+        commissionScheduleBps={snapshot.commissionScheduleBps}
+      />
     </AppShell>
   );
 }

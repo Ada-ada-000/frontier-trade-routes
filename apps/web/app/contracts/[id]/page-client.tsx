@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTradeRoutes } from "../../../lib/trade-routes-context";
 import { ContractActions } from "../../../components/contract-actions";
+import { StatusBadge } from "../../../components/ui/status-badge";
 
 function row(label: string, value?: string | number) {
   return (
@@ -21,10 +22,10 @@ export function ContractDetail({ id }: { id: string }) {
     return (
       <main className="page-stack">
         <section className="panel stack">
-          <p className="eyebrow">Missing contract</p>
-          <h1>Contract not found</h1>
+          <p className="eyebrow">Missing order</p>
+          <h1>Order not found</h1>
           <Link href="/contracts" className="button secondary">
-            Back to contracts
+            Back to orders
           </Link>
         </section>
       </main>
@@ -36,26 +37,25 @@ export function ContractDetail({ id }: { id: string }) {
       <section className="panel stack">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Contract detail</p>
+            <p className="eyebrow">Order detail</p>
             <h1>{contract.resource}</h1>
           </div>
-          <span className={`status-pill ${contract.status}`}>{contract.status}</span>
+          <StatusBadge label={contract.status === "accepted" ? "Accepted" : contract.status} />
         </div>
         <dl className="detail-grid">
-          {row("Creator", contract.creator)}
-          {row("Accepter", contract.accepter)}
+          {row("Requester", contract.creator)}
+          {row("Assigned Carrier", contract.accepter)}
           {row("Type", contract.contractType)}
           {row("Quantity", contract.quantity)}
           {row("Target region", contract.targetRegion)}
           {row("Reward", `${contract.reward} SUI`)}
-          {row("Collateral", `${contract.collateral} SUI`)}
-          {row("Expiration", contract.expirationTimestamp)}
+          {row("Bond", `${contract.collateral} SUI`)}
+          {row("Deadline", contract.expirationTimestamp)}
           {row("Created", contract.createdAt)}
           {row("Accepted", contract.acceptedAt)}
           {row("Completed", contract.completedAt)}
           {row("Cancelled", contract.cancelledAt)}
-          {row("Source", contract.source)}
-          {row("Transaction digest", contract.txDigest)}
+          {row("Activity", contract.txDigest)}
         </dl>
         {contract.note ? <div className="feedback success">{contract.note}</div> : null}
       </section>

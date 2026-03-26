@@ -3,13 +3,14 @@ import { AppShell } from "../../components/app-shell";
 import { IntelEventFeed } from "../../components/intel-event-feed";
 import { IntelSummary } from "../../components/intel-summary";
 import { OpportunityBoard } from "../../components/opportunity-board";
-import { RegionStatusBoard } from "../../components/region-status-board";
 import { MockOpportunitiesAdapter, getOpportunitiesAdapter } from "../../lib/opportunities";
+import { getTradeRoutesSnapshot } from "../../lib/trade-routes/server-data";
 import { mockIntelEvents, mockRegionStatuses } from "@eve/shared";
 
 export const dynamic = "force-dynamic";
 
 export default async function OpportunitiesPage() {
+  const snapshot = await getTradeRoutesSnapshot();
   const opportunities = await getOpportunitiesAdapter()
     .list()
     .catch(async () => {
@@ -19,30 +20,21 @@ export default async function OpportunitiesPage() {
   return (
     <AppShell>
       <main className="page-stack">
-        <section className="panel stack panel--subtle" id="intel">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Support Tool</p>
-              <h1>Intel</h1>
-            </div>
-            <Link href="/app#heatmap" className="button tertiary">
-              Back to App
-            </Link>
-          </div>
-        </section>
         <IntelSummary
           opportunities={opportunities}
           regionStatuses={mockRegionStatuses}
           intelEvents={mockIntelEvents}
+          action={
+            <Link href="/app#heatmap" className="button tertiary">
+              Back to App
+            </Link>
+          }
         />
         <OpportunityBoard opportunities={opportunities} />
-        <div className="two-column">
-          <RegionStatusBoard
-            regionStatuses={mockRegionStatuses}
-            opportunities={opportunities}
-          />
-          <IntelEventFeed events={mockIntelEvents} />
-        </div>
+        <IntelEventFeed
+          events={mockIntelEvents.slice(0, 4)}
+          reports={snapshot.intelReports}
+        />
       </main>
     </AppShell>
   );
