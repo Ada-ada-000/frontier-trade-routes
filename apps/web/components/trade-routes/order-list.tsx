@@ -7,10 +7,12 @@ import { OrderCard } from "./order-card";
 export function OrderList({
   orders,
   walletConnected,
+  locale = "en",
   onAccept,
 }: {
   orders: OrderPublicView[];
   walletConnected: boolean;
+  locale?: "en" | "zh";
   onAccept(order: OrderPublicView): void;
 }) {
   return (
@@ -20,6 +22,7 @@ export function OrderList({
           key={order.orderId}
           order={order}
           walletConnected={walletConnected}
+          locale={locale}
           onAccept={(nextOrder) => {
             startTransition(() => onAccept(nextOrder));
           }}

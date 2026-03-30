@@ -24,6 +24,7 @@ const E_WINNER_NOT_FOUND: u64 = 11;
 const E_DUPLICATE_BID: u64 = 12;
 const E_POLICY_MISMATCH: u64 = 13;
 const E_DEADLINE_NOT_REACHED: u64 = 14;
+const E_ALREADY_INSURED: u64 = 15;
 
 const MODE_URGENT: u8 = 0;
 const MODE_COMPETITIVE: u8 = 1;
@@ -393,6 +394,25 @@ public fun select_bid_winner(
         order_mode: order.order_mode,
         stage: order.stage,
     });
+}
+
+public fun buy_coverage(
+    book: &mut OrderBook,
+    pool: &mut InsurancePool,
+    order_id: u64,
+    premium_coin: Coin<SUI>,
+    ctx: &TxContext,
+) {
+    let order = borrow_order_mut(book, order_id);
+    assert!(tx_context::sender(ctx) == order.buyer, E_BUYER_ONLY);
+    assert!(order.status == STATUS_OPEN || order.status == STATUS_ASSIGNED || order.status == STATUS_IN_TRANSIT, E_INVALID_STATUS);
+    assert!(!order.insured, E_ALREADY_INSURED);
+
+    let premium_paid = coin::value(&premium_coin);
+    assert!(premium_paid > 0, E_POLICY_MISMATCH);
+    order.insured = true;
+    order.premium_paid = order.premium_paid + premium_paid;
+    insurance::collect_premium(pool, order_id, order.buyer, premium_coin);
 }
 
 public fun confirm_pickup(

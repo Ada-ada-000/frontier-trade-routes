@@ -3,8 +3,17 @@
 import { useDeferredValue } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { SuiObjectResponse, SuiParsedData } from "@mysten/sui/jsonRpc";
-import { Transaction } from "@mysten/sui/transactions";
+import {
+  buildAcceptOrderTx,
+  buildBuyCoverageTx,
+  buildCompleteDeliveryTx,
+  buildConfirmPickupTx,
+  buildIntelActionTx,
+  buildSellerTimeoutCompleteTx,
+  estimateCoveragePremiumMist,
+  getTradeRoutesChainConfig,
+  isLiveTradeRoutesConfig,
+} from "./sui-runtime";
 import {
   mockHeatmapTiles,
   mockInsurancePool,
@@ -13,142 +22,25 @@ import {
   mockReputationProfiles,
   mockTierPolicies,
 } from "./mock-data";
-import { buildHeatmap } from "./derive";
 import type {
   AcceptOrderInput,
+  IntelReportSummary,
   OrderPublicView,
   TradeRoutesSnapshot,
   TradeRoutesState,
 } from "./types";
 
-const CLOCK_OBJECT_ID = "0x6";
-
-function mergeHeatmapTiles(...sets: Array<Array<{ region: string; intensity: number; demandCount: number; insuredCount: number; urgentCount: number }>>) {
-  const merged = new Map<string, { region: string; intensity: number; demandCount: number; insuredCount: number; urgentCount: number }>();
-
-  for (const set of sets) {
-    for (const tile of set) {
-      const current = merged.get(tile.region) ?? {
-        region: tile.region,
-        intensity: 0,
-        demandCount: 0,
-        insuredCount: 0,
-        urgentCount: 0,
-      };
-
-      current.intensity = Math.max(current.intensity, tile.intensity);
-      current.demandCount = Math.max(current.demandCount, tile.demandCount);
-      current.insuredCount = Math.max(current.insuredCount, tile.insuredCount);
-      current.urgentCount = Math.max(current.urgentCount, tile.urgentCount);
-
-      merged.set(tile.region, current);
-    }
-  }
-
-  return [...merged.values()];
-}
-
 function envState(walletAddress?: string): TradeRoutesState {
+  const config = getTradeRoutesChainConfig();
   return {
-    mode:
-      process.env.NEXT_PUBLIC_SUI_PACKAGE_ID &&
-      process.env.NEXT_PUBLIC_ORDER_BOOK_ID &&
-      process.env.NEXT_PUBLIC_PROFILE_REGISTRY_ID
-        ? "sui"
-        : "mock",
+    mode: isLiveTradeRoutesConfig(config) ? "sui" : "mock",
     walletAddress,
-    packageId: process.env.NEXT_PUBLIC_SUI_PACKAGE_ID,
-    orderBookId: process.env.NEXT_PUBLIC_ORDER_BOOK_ID,
-    profileRegistryId: process.env.NEXT_PUBLIC_PROFILE_REGISTRY_ID,
-    insurancePoolId: process.env.NEXT_PUBLIC_INSURANCE_POOL_ID,
-  };
-}
-
-function stringValue(input: unknown) {
-  if (typeof input === "string") {
-    return input;
-  }
-  if (Array.isArray(input)) {
-    return new TextDecoder().decode(new Uint8Array(input.map((value) => Number(value))));
-  }
-  return "";
-}
-
-function bigIntString(input: unknown) {
-  if (typeof input === "string") {
-    return input;
-  }
-  if (typeof input === "number" || typeof input === "bigint") {
-    return String(input);
-  }
-  return "0";
-}
-
-function numberValue(input: unknown) {
-  if (typeof input === "number") {
-    return input;
-  }
-  if (typeof input === "string") {
-    return Number(input);
-  }
-  return 0;
-}
-
-function boolValue(input: unknown) {
-  return Boolean(input);
-}
-
-function asMoveFields(object: SuiObjectResponse) {
-  const content = object.data?.content;
-  if (!content || content.dataType !== "moveObject") {
-    return null;
-  }
-  return (content as Extract<SuiParsedData, { dataType: "moveObject" }>).fields as Record<string, unknown>;
-}
-
-function parseOrderObject(object: SuiObjectResponse): OrderPublicView | null {
-  const fields = asMoveFields(object);
-  const value = fields?.value as { fields?: Record<string, unknown> } | undefined;
-  const order = value?.fields;
-  const bids = Array.isArray(order?.bids) ? order.bids : [];
-  if (!order) {
-    return null;
-  }
-
-  return {
-    orderId: bigIntString(order.order_id),
-    buyer: stringValue(order.buyer),
-    seller: stringValue(order.seller) === "0x0" ? undefined : stringValue(order.seller),
-    orderMode: numberValue(order.order_mode) === 0 ? "urgent" : "competitive",
-    status:
-      numberValue(order.status) === 0
-        ? "open"
-        : numberValue(order.status) === 1
-          ? "assigned"
-          : numberValue(order.status) === 2
-            ? "in_transit"
-            : numberValue(order.status) === 3
-              ? "completed"
-              : "disputed",
-    stage:
-      numberValue(order.stage) === 0
-        ? "hidden"
-        : numberValue(order.stage) === 1
-          ? "pickup_revealed"
-          : numberValue(order.stage) === 2
-            ? "destination_revealed"
-            : "delivered",
-    cargoHint: stringValue(order.cargo_hint),
-    originFuzzy: stringValue(order.origin_fuzzy),
-    destinationFuzzy: stringValue(order.destination_fuzzy),
-    rewardBudgetMist: bigIntString(order.reward_budget),
-    quotedPriceMist: bigIntString(order.quoted_price),
-    minReputationScore: numberValue(order.min_reputation_score),
-    requiredStakeMist: bigIntString(order.required_stake_amount),
-    insured: boolValue(order.insured),
-    bidCount: bids.length,
-    createdAtMs: bigIntString(order.created_at_ms),
-    deadlineMs: bigIntString(order.deadline_ms),
+    packageId: config.packageId,
+    orderBookId: config.orderBookId,
+    profileRegistryId: config.profileRegistryId,
+    insurancePoolId: config.insurancePoolId,
+    treasuryId: config.treasuryId,
+    intelBoardId: config.intelBoardId,
   };
 }
 
@@ -160,12 +52,8 @@ export function useTradeRoutes() {
   const state = envState(account?.address);
 
   const snapshotQuery = useQuery({
-    queryKey: ["trade-routes", "snapshot", state.mode],
+    queryKey: ["trade-routes", "snapshot"],
     queryFn: async () => {
-      if (state.mode !== "mock") {
-        return null;
-      }
-
       const response = await fetch("/api/trade-routes/snapshot", {
         cache: "no-store",
       });
@@ -175,41 +63,7 @@ export function useTradeRoutes() {
 
       return (await response.json()) as TradeRoutesSnapshot;
     },
-    enabled: state.mode === "mock",
-    staleTime: 20_000,
-  });
-
-  const ordersQuery = useQuery({
-    queryKey: ["trade-routes", "orders", state.mode, state.orderBookId],
-    queryFn: async () => {
-      if (state.mode === "mock") {
-        return snapshotQuery.data?.orders ?? mockOrders;
-      }
-      if (!state.orderBookId) {
-        return mockOrders;
-      }
-
-      const dynamicFields = await client.getDynamicFields({
-        parentId: state.orderBookId,
-        limit: 50,
-      });
-
-      if (dynamicFields.data.length === 0) {
-        return [];
-      }
-
-      const objects = await client.multiGetObjects({
-        ids: dynamicFields.data.map((field) => field.objectId),
-        options: { showContent: true },
-      });
-
-      return objects
-        .map(parseOrderObject)
-        .filter((order): order is OrderPublicView => Boolean(order))
-        .sort((left, right) => Number(right.createdAtMs) - Number(left.createdAtMs));
-    },
-    staleTime: 20_000,
-    enabled: state.mode === "mock" ? snapshotQuery.status !== "pending" : true,
+    staleTime: 10_000,
   });
 
   const ownedCoinsQuery = useQuery({
@@ -231,6 +85,13 @@ export function useTradeRoutes() {
     enabled: Boolean(account?.address),
     staleTime: 10_000,
   });
+
+  async function invalidateTradeRoutesData() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["trade-routes", "snapshot"] }),
+      queryClient.invalidateQueries({ queryKey: ["trade-routes", "coins"] }),
+    ]);
+  }
 
   const acceptOrder = useMutation({
     mutationFn: async (input: AcceptOrderInput) => {
@@ -258,68 +119,210 @@ export function useTradeRoutes() {
 
         return { digest: `mock-accept-${input.orderId}` };
       }
-      if (!state.packageId || !state.orderBookId || !state.profileRegistryId) {
-        throw new Error("Missing package or shared object ids for live accept_order.");
-      }
+
       if (!account?.address) {
         throw new Error("Connect a wallet before accepting an order.");
       }
 
-      const tx = new Transaction();
-      tx.moveCall({
-        target: `${state.packageId}::order::accept_order`,
-        arguments: [
-          tx.object(state.orderBookId),
-          tx.object(state.profileRegistryId),
-          tx.pure.u64(input.orderId),
-          tx.pure.u64(input.quotedPriceMist),
-          tx.object(input.stakeCoinObjectId),
-          tx.object(CLOCK_OBJECT_ID),
-        ],
+      const tx = buildAcceptOrderTx({
+        config: state,
+        orderId: input.orderId,
+        quotedPriceMist: input.quotedPriceMist,
+        stakeCoinObjectId: input.stakeCoinObjectId,
       });
 
       return signAndExecute({ transaction: tx });
     },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["trade-routes", "snapshot"] }),
-        queryClient.invalidateQueries({ queryKey: ["trade-routes", "orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["trade-routes", "coins"] }),
-      ]);
-    },
+    onSuccess: invalidateTradeRoutesData,
   });
 
-  const orders = useDeferredValue(ordersQuery.data ?? snapshotQuery.data?.orders ?? mockOrders);
-  const heatmap = snapshotQuery.data?.heatmap
-    ? mergeHeatmapTiles(mockHeatmapTiles, snapshotQuery.data.heatmap)
-    : mergeHeatmapTiles(mockHeatmapTiles, orders.length > 0 ? buildHeatmap(orders) : []);
-  const profiles = snapshotQuery.data?.profiles ?? mockReputationProfiles;
-  const intelReports = snapshotQuery.data?.intelReports ?? mockIntelReports;
-  const tierPolicies = snapshotQuery.data?.tierPolicies ?? mockTierPolicies;
-  const insurancePool = snapshotQuery.data?.insurancePool ?? mockInsurancePool;
-  const commissionScheduleBps = snapshotQuery.data?.commissionScheduleBps ?? {
-    bronze: 800,
-    silver: 500,
-    gold: 300,
-    elite: 150,
-  };
+  const buyCoverage = useMutation({
+    mutationFn: async (order: OrderPublicView) => {
+      if (state.mode === "mock") {
+        const response = await fetch("/api/trade-routes/orders/cover", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ orderId: order.orderId }),
+        });
+
+        const payload = (await response.json()) as { error?: string };
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Coverage purchase failed.");
+        }
+
+        return payload;
+      }
+
+      if (!account?.address) {
+        throw new Error("Connect a wallet before buying coverage.");
+      }
+
+      const premiumMist = estimateCoveragePremiumMist(order);
+      const eligibleCoin = (ownedCoinsQuery.data ?? [])
+        .filter((coin) => BigInt(coin.balanceMist) >= BigInt(premiumMist))
+        .sort((left, right) => Number(BigInt(right.balanceMist) - BigInt(left.balanceMist)))[0];
+
+      if (!eligibleCoin) {
+        throw new Error("No SUI coin has enough balance to pay the coverage premium.");
+      }
+
+      const tx = buildBuyCoverageTx({
+        config: state,
+        orderId: order.orderId,
+        premiumMist,
+        fundingCoinObjectId: eligibleCoin.objectId,
+      });
+
+      return signAndExecute({ transaction: tx });
+    },
+    onSuccess: invalidateTradeRoutesData,
+  });
+
+  const runIntelAction = useMutation({
+    mutationFn: async (input: { reportId: string; action: "support" | "dispute" | "resolve" }) => {
+      if (state.mode === "mock") {
+        const response = await fetch("/api/trade-routes/intel", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            reportId: input.reportId,
+            action: input.action,
+            actor: account?.address,
+          }),
+        });
+
+        const payload = (await response.json()) as {
+          error?: string;
+          report?: IntelReportSummary;
+        };
+        if (!response.ok || !payload.report) {
+          throw new Error(payload.error ?? "Intel action failed.");
+        }
+        return payload.report;
+      }
+
+      if (!account?.address && input.action !== "resolve") {
+        throw new Error("Connect a wallet before validating intel.");
+      }
+
+      const tx = buildIntelActionTx({
+        config: state,
+        reportId: input.reportId,
+        action: input.action,
+      });
+
+      return signAndExecute({ transaction: tx });
+    },
+    onSuccess: invalidateTradeRoutesData,
+  });
+
+  const confirmPickup = useMutation({
+    mutationFn: async (orderId: string) => {
+      if (state.mode === "mock") {
+        const response = await fetch("/api/trade-routes/orders/transition", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId, action: "pickup" }),
+        });
+
+        const payload = (await response.json()) as { error?: string };
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Failed to confirm pickup.");
+        }
+        return payload;
+      }
+
+      const tx = buildConfirmPickupTx({ config: state, orderId });
+      return signAndExecute({ transaction: tx });
+    },
+    onSuccess: invalidateTradeRoutesData,
+  });
+
+  const completeDelivery = useMutation({
+    mutationFn: async (orderId: string) => {
+      if (state.mode === "mock") {
+        const response = await fetch("/api/trade-routes/orders/transition", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId, action: "complete", actor: account?.address }),
+        });
+        const payload = (await response.json()) as { error?: string };
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Failed to complete delivery.");
+        }
+        return payload;
+      }
+
+      const tx = buildCompleteDeliveryTx({ config: state, orderId });
+      return signAndExecute({ transaction: tx });
+    },
+    onSuccess: invalidateTradeRoutesData,
+  });
+
+  const sellerTimeoutComplete = useMutation({
+    mutationFn: async (orderId: string) => {
+      if (state.mode === "mock") {
+        const response = await fetch("/api/trade-routes/orders/transition", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId, action: "seller-timeout", actor: account?.address }),
+        });
+        const payload = (await response.json()) as { error?: string };
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Failed to force timeout completion.");
+        }
+        return payload;
+      }
+
+      const tx = buildSellerTimeoutCompleteTx({ config: state, orderId });
+      return signAndExecute({ transaction: tx });
+    },
+    onSuccess: invalidateTradeRoutesData,
+  });
+
+  const snapshot = snapshotQuery.data;
+  const orders = useDeferredValue(snapshot?.orders ?? mockOrders);
 
   return {
     ...state,
+    source: snapshot?.source ?? "mock-indexer",
     orders,
-    heatmap,
-    profiles,
-    intelReports,
-    tierPolicies,
-    insurancePool,
-    commissionScheduleBps,
+    heatmap: snapshot?.heatmap ?? mockHeatmapTiles,
+    profiles: snapshot?.profiles ?? mockReputationProfiles,
+    intelReports: snapshot?.intelReports ?? mockIntelReports,
+    tierPolicies: snapshot?.tierPolicies ?? mockTierPolicies,
+    insurancePool: snapshot?.insurancePool ?? mockInsurancePool,
+    commissionScheduleBps:
+      snapshot?.commissionScheduleBps ?? {
+        bronze: 800,
+        silver: 500,
+        gold: 300,
+        elite: 150,
+      },
     ownedCoins: ownedCoinsQuery.data ?? [],
-    isLoading: ordersQuery.isLoading || snapshotQuery.isLoading,
+    isLoading: snapshotQuery.isLoading,
     isAccepting: acceptOrder.isPending,
+    isBuyingCoverage: buyCoverage.isPending,
+    isActingOnIntel: runIntelAction.isPending,
+    isConfirmingPickup: confirmPickup.isPending,
+    isCompletingDelivery: completeDelivery.isPending,
+    isTimeoutCompleting: sellerTimeoutComplete.isPending,
     acceptError: acceptOrder.error instanceof Error ? acceptOrder.error.message : undefined,
+    coverageError: buyCoverage.error instanceof Error ? buyCoverage.error.message : undefined,
+    intelActionError:
+      runIntelAction.error instanceof Error ? runIntelAction.error.message : undefined,
     refresh: async () => {
-      await Promise.all([snapshotQuery.refetch(), ordersQuery.refetch()]);
+      await Promise.all([snapshotQuery.refetch(), ownedCoinsQuery.refetch()]);
     },
     acceptOrder: acceptOrder.mutateAsync,
+    buyCoverage: buyCoverage.mutateAsync,
+    runIntelAction: runIntelAction.mutateAsync,
+    confirmPickup: confirmPickup.mutateAsync,
+    completeDelivery: completeDelivery.mutateAsync,
+    sellerTimeoutComplete: sellerTimeoutComplete.mutateAsync,
   };
 }

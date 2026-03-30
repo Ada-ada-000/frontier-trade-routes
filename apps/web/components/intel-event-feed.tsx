@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import {
   contractTypeLabels,
@@ -9,55 +9,62 @@ import {
   riskLevelLabels,
   type IntelEvent,
 } from "@eve/shared";
+import { localizePath, type AppLocale } from "../lib/i18n";
 import type { IntelReportSummary } from "../lib/trade-routes/types";
+import { useTradeRoutes } from "../lib/trade-routes/use-trade-routes";
 import { ProgressBar } from "./ui/progress-bar";
 import { StatusBadge } from "./ui/status-badge";
 
-function statusLabel(status: IntelReportSummary["status"]) {
-  if (status === "confirmed") return "✅ Verified";
-  if (status === "disputed") return "⚠️ Disputed";
-  if (status === "false") return "❌ False";
-  return "⏳ Pending";
+function statusLabel(status: IntelReportSummary["status"], locale: AppLocale) {
+  if (status === "confirmed") return locale === "zh" ? "✅ 已验证" : "✅ Verified";
+  if (status === "disputed") return locale === "zh" ? "⚠️ 有争议" : "⚠️ Disputed";
+  if (status === "false") return locale === "zh" ? "❌ 不可信" : "❌ False";
+  return locale === "zh" ? "⏳ 待确认" : "⏳ Pending";
+}
+
+function localizeRecommendedType(type: "procure" | "deliver", locale: AppLocale) {
+  if (locale !== "zh") return contractTypeLabels[type];
+  return type === "deliver" ? "运输" : "采购";
 }
 
 export function IntelEventFeed({
   events,
   reports,
+  locale = "en",
 }: {
   events: IntelEvent[];
   reports: IntelReportSummary[];
+  locale?: AppLocale;
 }) {
+  const isZh = locale === "zh";
   const account = useCurrentAccount();
+  const tradeRoutes = useTradeRoutes();
   const [items, setItems] = useState(reports);
   const [isPending, startTransition] = useTransition();
   const [actionError, setActionError] = useState<string>();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [view, setView] = useState<"reports" | "alerts">("reports");
 
+  useEffect(() => {
+    setItems(reports);
+  }, [reports]);
+
   function onAction(reportId: string, action: "support" | "dispute" | "resolve") {
     setActionError(undefined);
     startTransition(async () => {
-      const response = await fetch("/api/trade-routes/intel", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ reportId, action, actor: account?.address }),
-      });
-
-      const payload = (await response.json()) as {
-        error?: string;
-        report?: IntelReportSummary;
-      };
-
-      if (!response.ok || !payload.report) {
-        setActionError(payload.error ?? "Intel action failed.");
-        return;
+      try {
+        const result = await tradeRoutes.runIntelAction({ reportId, action });
+        if (result && typeof result === "object" && "reportId" in result) {
+          const updated = result as IntelReportSummary;
+          setItems((current) =>
+            current.map((item) => (item.reportId === reportId ? updated : item)),
+          );
+        }
+      } catch (error) {
+        setActionError(
+          error instanceof Error ? error.message : isZh ? "情报操作失败。" : "Intel action failed.",
+        );
       }
-
-      setItems((current) =>
-        current.map((item) => (item.reportId === reportId ? payload.report! : item)),
-      );
     });
   }
 
@@ -65,8 +72,8 @@ export function IntelEventFeed({
     <section className="panel stack">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Validation</p>
-          <h2>Check reports before you trust them</h2>
+          <p className="eyebrow">{isZh ? "情报验证" : "Validation"}</p>
+          <h2>{isZh ? "情报台" : "Intel Desk"}</h2>
         </div>
         <div className="segmented-control" role="tablist" aria-label="Community intelligence views">
           <button
@@ -74,43 +81,37 @@ export function IntelEventFeed({
             className={`segmented-control__item${view === "reports" ? " is-active" : ""}`}
             onClick={() => setView("reports")}
           >
-            Reports
+            {isZh ? "报告" : "Reports"}
           </button>
           <button
             type="button"
             className={`segmented-control__item${view === "alerts" ? " is-active" : ""}`}
             onClick={() => setView("alerts")}
           >
-            Alerts
+            {isZh ? "警报" : "Alerts"}
           </button>
         </div>
       </div>
       {actionError ? <p className="muted">{actionError}</p> : null}
-      <div className="quick-guide">
-        <div className="quick-guide__copy">
-          <strong>Support reports you would use. Dispute reports that look misleading.</strong>
-          <p className="muted">
-            Use details only when you need to validate a report. Most of the time, the status badge is enough.
-          </p>
-        </div>
-      </div>
       {view === "reports" ? (
         <div className="event-feed">
           {items.map((report) => (
             <article key={report.reportId} className="event-card">
               <div className="opportunity-head">
                 <div>
-                  <p className="eyebrow">Validation report</p>
+                  <p className="eyebrow">{isZh ? "验证报告" : "Validation report"}</p>
                   <strong>{report.regionFuzzy}</strong>
                   <p className="opportunity-subtitle">
-                    Signal {report.signalKind} · confidence {(report.confidenceBps / 100).toFixed(0)}%
+                    {isZh
+                      ? `${report.signalKind} · ${(report.confidenceBps / 100).toFixed(0)}%`
+                      : `${report.signalKind} · ${(report.confidenceBps / 100).toFixed(0)}%`}
                   </p>
                 </div>
-                <StatusBadge label={statusLabel(report.status)} />
+                <StatusBadge label={statusLabel(report.status, locale)} />
               </div>
               <div className="consensus-block">
                 <div className="consensus-block__head">
-                  <span>Trust level</span>
+                  <span>{isZh ? "可信度" : "Trust level"}</span>
                   <strong>
                     {Math.round(
                       (report.supportCount /
@@ -131,9 +132,9 @@ export function IntelEventFeed({
               </div>
               <div className="card-footer">
                 <div className="card-footer__meta">
-                  <span className="eyebrow">Signal</span>
-                  <strong>{report.supportCount} support · {report.disputeCount} dispute</strong>
-                </div>
+                    <span className="eyebrow">{isZh ? "反馈" : "Signal"}</span>
+                    <strong>{isZh ? `${report.supportCount} 支持 · ${report.disputeCount} 质疑` : `${report.supportCount} support · ${report.disputeCount} dispute`}</strong>
+                  </div>
                 <button
                   type="button"
                   className="button secondary"
@@ -141,24 +142,24 @@ export function IntelEventFeed({
                     setExpanded((current) => (current === report.reportId ? null : report.reportId))
                   }
                 >
-                  View Details
+                  {isZh ? "查看详情" : "View Details"}
                 </button>
               </div>
               {expanded === report.reportId ? (
                 <div className="stack compact">
                   <div className="stats-grid">
                     <div className="side-block">
-                      <span className="eyebrow">Linked orders</span>
+                      <span className="eyebrow">{isZh ? "关联订单" : "Linked orders"}</span>
                       <strong>{report.linkedOrderCount}</strong>
                     </div>
                     <div className="side-block">
-                      <span className="eyebrow">Validation score</span>
+                      <span className="eyebrow">{isZh ? "验证分" : "Validation score"}</span>
                       <strong>{report.validationScore}</strong>
                     </div>
                     <div className="side-block">
-                      <span className="eyebrow">Review window</span>
+                      <span className="eyebrow">{isZh ? "验证窗口" : "Review window"}</span>
                       <strong>
-                        {Date.now() >= Number(report.expiresAtMs) ? "Ready" : "Open"}
+                        {Date.now() >= Number(report.expiresAtMs) ? (isZh ? "可结算" : "Ready") : isZh ? "进行中" : "Open"}
                       </strong>
                     </div>
                   </div>
@@ -169,7 +170,7 @@ export function IntelEventFeed({
                     disabled={!account?.address || isPending}
                     onClick={() => onAction(report.reportId, "support")}
                   >
-                    Support
+                    {isZh ? "支持" : "Support"}
                   </button>
                   <button
                     type="button"
@@ -177,7 +178,7 @@ export function IntelEventFeed({
                     disabled={!account?.address || isPending}
                     onClick={() => onAction(report.reportId, "dispute")}
                   >
-                    Dispute
+                    {isZh ? "质疑" : "Dispute"}
                   </button>
                   <button
                     type="button"
@@ -185,7 +186,7 @@ export function IntelEventFeed({
                     disabled={isPending || Date.now() < Number(report.expiresAtMs)}
                     onClick={() => onAction(report.reportId, "resolve")}
                   >
-                    Resolve
+                    {isZh ? "结算" : "Resolve"}
                   </button>
                   </div>
                 </div>
@@ -197,8 +198,8 @@ export function IntelEventFeed({
         <div className="panel panel--subtle stack">
           <div className="section-head compact">
             <div>
-              <p className="eyebrow">Latest alerts</p>
-              <h3>Field signals</h3>
+              <p className="eyebrow">{isZh ? "最新警报" : "Latest alerts"}</p>
+              <h3>{isZh ? "现场信号" : "Field signals"}</h3>
             </div>
           </div>
           <div className="event-feed event-feed--compact">
@@ -211,26 +212,22 @@ export function IntelEventFeed({
                   </div>
                   <span className="status-pill">{riskLevelLabels[event.riskLevel]}</span>
                 </div>
-                <div className="stack compact">
-                  <p className="muted">
-                    {event.regionName} · {event.confidence}% confidence
-                  </p>
-                </div>
+                <p className="muted">{event.regionName} · {event.confidence}%</p>
                 <div className="card-footer">
                   <div className="card-footer__meta">
-                    <span className="eyebrow">Best action</span>
+                    <span className="eyebrow">{isZh ? "推荐动作" : "Best action"}</span>
                     <strong>
                       {event.recommendedContractType
-                        ? contractTypeLabels[event.recommendedContractType]
-                        : "Observe"}
+                        ? localizeRecommendedType(event.recommendedContractType, locale)
+                        : isZh ? "继续观察" : "Observe"}
                     </strong>
                   </div>
                   {event.recommendedContractType && event.resourceName ? (
                     <Link
-                      href={`/contracts?type=${event.recommendedContractType}&resource=${encodeURIComponent(event.resourceName)}&region=${encodeURIComponent(event.regionName)}`}
+                      href={localizePath(`/contracts?type=${event.recommendedContractType}&resource=${encodeURIComponent(event.resourceName)}&region=${encodeURIComponent(event.regionName)}`, locale)}
                       className="button secondary"
                     >
-                      Post order
+                      {isZh ? "创建订单" : "Post order"}
                     </Link>
                   ) : (
                     <span className="subtle">{new Date(event.timestamp).toLocaleDateString()}</span>

@@ -16,15 +16,17 @@ const SILVER_MIN_SCORE: u64 = 550;
 const GOLD_MIN_SCORE: u64 = 700;
 const ELITE_MIN_SCORE: u64 = 850;
 
-const BRONZE_MIN_STAKE: u64 = 20_000_000_000;
-const SILVER_MIN_STAKE: u64 = 60_000_000_000;
-const GOLD_MIN_STAKE: u64 = 120_000_000_000;
-const ELITE_MIN_STAKE: u64 = 250_000_000_000;
+// Testnet-scaled economics: same ratios as production design, but small enough
+// to run end-to-end with faucet balances and wallet-owned SUI coins.
+const BRONZE_MIN_STAKE: u64 = 20_000_000;
+const SILVER_MIN_STAKE: u64 = 60_000_000;
+const GOLD_MIN_STAKE: u64 = 120_000_000;
+const ELITE_MIN_STAKE: u64 = 250_000_000;
 
-const BRONZE_MAX_ORDER_VALUE: u64 = 150_000_000_000;
-const SILVER_MAX_ORDER_VALUE: u64 = 350_000_000_000;
-const GOLD_MAX_ORDER_VALUE: u64 = 800_000_000_000;
-const ELITE_MAX_ORDER_VALUE: u64 = 2_000_000_000_000;
+const BRONZE_MAX_ORDER_VALUE: u64 = 150_000_000;
+const SILVER_MAX_ORDER_VALUE: u64 = 350_000_000;
+const GOLD_MAX_ORDER_VALUE: u64 = 800_000_000;
+const ELITE_MAX_ORDER_VALUE: u64 = 2_000_000_000;
 
 public struct ProfileRegistry has key {
     id: UID,

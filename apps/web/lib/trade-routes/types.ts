@@ -87,6 +87,8 @@ export interface TradeRoutesState {
   orderBookId?: string;
   profileRegistryId?: string;
   insurancePoolId?: string;
+  treasuryId?: string;
+  intelBoardId?: string;
 }
 
 export interface TradeRoutesSnapshot {
@@ -98,7 +100,7 @@ export interface TradeRoutesSnapshot {
   insurancePool: InsurancePoolSnapshot;
   commissionScheduleBps: Record<string, number>;
   generatedAt: string;
-  source: "mock-indexer";
+  source: "mock-indexer" | "sui-testnet";
 }
 
 export function formatAddress(value: string) {

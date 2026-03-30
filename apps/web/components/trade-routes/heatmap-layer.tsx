@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type AppLocale } from "../../lib/i18n";
 import type { HeatmapTile } from "../../lib/trade-routes/types";
 import { adaptHeatmapScene } from "../../lib/trade-routes/map-adapter";
 import { backgroundStars, sceneSize } from "../../lib/trade-routes/map-scene";
@@ -148,12 +149,17 @@ export function HeatmapLayer({
   activeRegion,
   onSelectRegion,
   metrics,
+  locale = "en",
+  overlay,
 }: {
   data: HeatmapTile[];
   activeRegion?: string;
   onSelectRegion(regionName: string): void;
   metrics: { openOrders: number; insured: number; totalStake: number };
+  locale?: AppLocale;
+  overlay?: ReactNode;
 }) {
+  const isZh = locale === "zh";
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const didInitView = useRef(false);
@@ -438,20 +444,20 @@ export function HeatmapLayer({
 
   return (
     <section className="heatmap-panel" id="heatmap">
-      <section className="heatmap-visual-panel" aria-label="Visual logistics pressure map">
+      <section className="heatmap-visual-panel" aria-label={isZh ? "物流热力图" : "Visual logistics pressure map"}>
         <div className="heatmap-visual-panel__frame">
           <div className="heatmap-visual-panel__topbar">
             <div className="heatmap-visual-panel__metrics">
               <article className="operations-metric">
-                <span className="eyebrow">Visible route tasks</span>
+                <span className="eyebrow">{isZh ? "可见任务" : "Visible route tasks"}</span>
                 <strong>{metrics.openOrders}</strong>
               </article>
               <article className="operations-metric">
-                <span className="eyebrow">Capital currently required</span>
+                <span className="eyebrow">{isZh ? "当前所需质押" : "Capital currently required"}</span>
                 <strong>{metrics.totalStake.toFixed(0)} SUI</strong>
               </article>
               <article className="operations-metric">
-                <span className="eyebrow">Recovery-backed jobs</span>
+                <span className="eyebrow">{isZh ? "保险支撑任务" : "Recovery-backed jobs"}</span>
                 <strong>{metrics.insured}</strong>
               </article>
             </div>
@@ -468,7 +474,7 @@ export function HeatmapLayer({
                 className="heatmap-visual-panel__tool heatmap-visual-panel__tool--wide"
                 onClick={resetView}
               >
-                Reset
+                {isZh ? "重置" : "Reset"}
               </button>
             </div>
           </div>
@@ -536,12 +542,20 @@ export function HeatmapLayer({
                   onMouseEnter={() => setHoveredRegion(item.region)}
                   onMouseLeave={() => setHoveredRegion(null)}
                   onClick={() => focusRegion(item.region)}
-                  title={`Open ${item.label}`}
+                  title={isZh ? `查看 ${item.label}` : `Open ${item.label}`}
                 >
                   <span className="heatmap-visual-node__dot" aria-hidden="true" />
                   <div className="heatmap-visual-node__content">
                     <strong>{item.label}</strong>
-                    <span>{item.demandCount > 0 ? `${item.demandCount} route${item.demandCount > 1 ? "s" : ""}` : "mapped system"}</span>
+                    <span>
+                      {item.demandCount > 0
+                        ? isZh
+                          ? `${item.demandCount} 条航线`
+                          : `${item.demandCount} route${item.demandCount > 1 ? "s" : ""}`
+                        : isZh
+                          ? "已标记星系"
+                          : "mapped system"}
+                    </span>
                   </div>
                 </button>
               ))}
@@ -551,9 +565,9 @@ export function HeatmapLayer({
           <div className="heatmap-visual-panel__footer">
             <div className="heatmap-visual-panel__dock heatmap-visual-panel__dock--legend">
               <div className="heatmap-visual-panel__legend">
-                <span>Low</span>
+                <span>{isZh ? "低" : "Low"}</span>
                 <div className="heatmap-visual-panel__legend-bar" />
-                <span>High</span>
+                <span>{isZh ? "高" : "High"}</span>
               </div>
             </div>
             <div className="heatmap-visual-panel__dock heatmap-visual-panel__dock--action">
@@ -565,10 +579,12 @@ export function HeatmapLayer({
                   resetView();
                 }}
               >
-                Show All Regions
+                {isZh ? "显示全部区域" : "Show All Regions"}
               </button>
             </div>
           </div>
+
+          {overlay}
         </div>
       </section>
     </section>

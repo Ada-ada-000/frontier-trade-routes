@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
+import { localizePath, type AppLocale } from "../../lib/i18n";
 import {
   formatAddress,
   formatMist,
@@ -22,6 +23,19 @@ function getCompletionRate(profile: ReputationProfile) {
 function feeRateForTier(tier: number, policies: TierPolicy[]) {
   const policy = policies.find((item) => item.tier === tier);
   return policy ? `${(policy.commissionBps / 100).toFixed(1)}%` : "—";
+}
+
+function localizeTier(label: string, locale: AppLocale) {
+  if (locale !== "zh") return label;
+  return (
+    {
+      Bronze: "青铜",
+      Silver: "白银",
+      Gold: "黄金",
+      Elite: "精英",
+      Unranked: "未定级",
+    }[label] ?? label
+  );
 }
 
 function recommendedLane(profile: ReputationProfile | undefined) {
@@ -60,10 +74,13 @@ function recommendedLane(profile: ReputationProfile | undefined) {
 export function ReputationPanel({
   profiles,
   tierPolicies,
+  locale = "en",
 }: {
   profiles: ReputationProfile[];
   tierPolicies: TierPolicy[];
+  locale?: AppLocale;
 }) {
+  const isZh = locale === "zh";
   const account = useCurrentAccount();
   const [showAll, setShowAll] = useState(false);
   const [showTierRules, setShowTierRules] = useState(false);
@@ -88,130 +105,118 @@ export function ReputationPanel({
     : 100;
   const visibleProfiles = showAll ? profiles : profiles.slice(0, 5);
   const suggestedLane = recommendedLane(myProfile);
+  const localizedSuggestedLane = isZh
+    ? {
+        title: suggestedLane.type === "deliver" ? "优先接稳定运输单" : "先从低风险采购单开始",
+        note:
+          suggestedLane.type === "deliver"
+            ? "你已经适合处理更高价值的运输协作，先稳住完成率。"
+            : "短线采购单更容易稳定提升完成率和等级进度。",
+      }
+    : suggestedLane;
+  const currentTierLabel = myProfile ? localizeTier(formatTierLabel(myProfile.tier), locale) : isZh ? "未定级" : "Unranked";
+  const topTierLabel = topProfile ? localizeTier(formatTierLabel(topProfile.tier), locale) : isZh ? "实时" : "Live";
 
   return (
     <main className="page-stack">
       <section className="panel stack" id="reputation">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Reputation</p>
-            <h1>Improve your carrier rank</h1>
+            <p className="eyebrow">{isZh ? "声誉" : "Reputation"}</p>
+            <h1>{isZh ? "等级与接单权限" : "Rank & Access"}</h1>
           </div>
-          <StatusBadge label={myProfile ? formatTierLabel(myProfile.tier) : "Unranked"} />
+          <StatusBadge label={currentTierLabel} />
         </div>
-
-        <div className="quick-guide">
-          <div className="quick-guide__copy">
-            <strong>Your rank decides which orders you can see and how much fee you pay.</strong>
-            <p className="muted">
-              Focus on the next tier, keep your completion rate high, and take safer runs first.
-            </p>
-          </div>
-          <div className="button-row action-row">
-            <Link href={`/contracts?type=${suggestedLane.type}`} className="button primary">
-              Find Next Order
-            </Link>
-            <button
-              type="button"
-              className="button secondary"
-              onClick={() => setShowTierRules((current) => !current)}
-            >
-              {showTierRules ? "Hide Rank Rules" : "View Rank Rules"}
-            </button>
-          </div>
+        <div className="button-row action-row">
+          <Link href={localizePath(`/contracts?type=${suggestedLane.type}`, locale)} className="button primary">
+            {isZh ? "找下一单" : "Find Next Order"}
+          </Link>
+          <Link href={localizePath("/app/insurance", locale)} className="button secondary">
+            {isZh ? "查看保险" : "Open Coverage"}
+          </Link>
+          <button
+            type="button"
+            className="button tertiary"
+            onClick={() => setShowTierRules((current) => !current)}
+          >
+            {showTierRules ? (isZh ? "收起等级规则" : "Hide Rank Rules") : isZh ? "等级规则" : "Tier Rules"}
+          </button>
         </div>
 
         <div className="dashboard-grid">
           <article className="table-card">
             <div className="table-card__header">
               <div>
-                <p className="eyebrow">My progress</p>
-                <strong>{myProfile ? formatTierLabel(myProfile.tier) : "Unranked"}</strong>
+                <p className="eyebrow">{isZh ? "我的进度" : "My progress"}</p>
+                <strong>{currentTierLabel}</strong>
               </div>
-              <StatusBadge label={nextTier ? `Next: ${nextTier.label}` : "Top tier"} />
+              <StatusBadge label={nextTier ? (isZh ? `下一档：${localizeTier(nextTier.label, locale)}` : `Next: ${nextTier.label}`) : isZh ? "最高等级" : "Top tier"} />
             </div>
 
             <div className="stats-grid">
               <div className="side-block">
-                <span className="eyebrow">Score</span>
+                <span className="eyebrow">{isZh ? "声誉分" : "Score"}</span>
                 <strong>{myProfile?.score ?? 0}</strong>
               </div>
               <div className="side-block">
-                <span className="eyebrow">Completion</span>
+                <span className="eyebrow">{isZh ? "完成率" : "Completion"}</span>
                 <strong>{myProfile ? `${getCompletionRate(myProfile)}%` : "0%"}</strong>
               </div>
               <div className="side-block">
-                <span className="eyebrow">Active Bond</span>
+                <span className="eyebrow">{isZh ? "活跃质押" : "Active Bond"}</span>
                 <strong>{myProfile ? formatMist(myProfile.activeStakeMist) : "0 SUI"}</strong>
               </div>
               <div className="side-block">
-                <span className="eyebrow">Next Tier</span>
-                <strong>{nextTier ? `${progressNeeded} pts needed` : "Unlocked"}</strong>
+                <span className="eyebrow">{isZh ? "下一档" : "Next Tier"}</span>
+                <strong>{nextTier ? (isZh ? `还差 ${progressNeeded} 分` : `${progressNeeded} pts needed`) : isZh ? "已解锁" : "Unlocked"}</strong>
               </div>
             </div>
 
             <ProgressBar value={progressValue} tone="orange" />
-            <p className="muted">
-              {nextTier
-                ? `Complete more routes to unlock ${nextTier.label} access and lower fees.`
-                : "You are already at the highest visible access tier."}
-            </p>
-
-            <div className="button-row action-row">
-              <Link href="/contracts" className="button primary">
-                Open Orders
-              </Link>
-              <Link href="/app/insurance" className="button secondary">
-                Open Coverage
-              </Link>
-            </div>
           </article>
 
           <article className="table-card">
             <div className="table-card__header">
               <div>
-                <p className="eyebrow">What to do next</p>
-                <strong>{suggestedLane.title}</strong>
+                <p className="eyebrow">{isZh ? "下一步" : "Next Move"}</p>
+                <strong>{localizedSuggestedLane.title}</strong>
               </div>
-              <StatusBadge label={topProfile ? `Top carrier: ${formatTierLabel(topProfile.tier)}` : "Live"} />
+              <StatusBadge label={topProfile ? (isZh ? `头部承运人：${topTierLabel}` : `Top carrier: ${formatTierLabel(topProfile.tier)}`) : isZh ? "实时" : "Live"} />
             </div>
 
             <div className="stack compact">
-              <p className="muted">{suggestedLane.note}</p>
               <div className="stats-grid">
                 <div className="side-block">
-                  <span className="eyebrow">Current fee</span>
+                  <span className="eyebrow">{isZh ? "当前费率" : "Current fee"}</span>
                   <strong>{feeRateForTier(myProfile?.tier ?? 0, sortedPolicies)}</strong>
-                  <span className="subtle">{myProfile ? formatTierLabel(myProfile.tier) : "Unranked"}</span>
+                  <span className="subtle">{currentTierLabel}</span>
                 </div>
                 <div className="side-block">
-                  <span className="eyebrow">Next unlock</span>
-                  <strong>{nextTier ? nextTier.label : "Top tier"}</strong>
+                  <span className="eyebrow">{isZh ? "下一档解锁" : "Next unlock"}</span>
+                  <strong>{nextTier ? localizeTier(nextTier.label, locale) : isZh ? "最高档" : "Top tier"}</strong>
                   <span className="subtle">
-                    {nextTier ? `${progressNeeded} pts remaining` : "All visible benefits unlocked"}
+                    {nextTier ? (isZh ? `还差 ${progressNeeded} 分` : `${progressNeeded} pts remaining`) : isZh ? "当前可见权益已全部解锁" : "All visible benefits unlocked"}
                   </span>
                 </div>
                 <div className="side-block">
-                  <span className="eyebrow">Best route type</span>
-                  <strong>{suggestedLane.type === "deliver" ? "Deliver" : "Procure"}</strong>
-                  <span className="subtle">Recommended by completion and score</span>
+                  <span className="eyebrow">{isZh ? "推荐航线类型" : "Best route type"}</span>
+                  <strong>{suggestedLane.type === "deliver" ? (isZh ? "运输" : "Deliver") : isZh ? "采购" : "Procure"}</strong>
                 </div>
                 <div className="side-block">
-                  <span className="eyebrow">Coverage access</span>
-                  <strong>{(myProfile?.score ?? 0) >= 200 ? "Ready" : "Limited"}</strong>
-                  <span className="subtle">Use insurance for higher-value coordination</span>
+                  <span className="eyebrow">{isZh ? "保险权限" : "Coverage access"}</span>
+                  <strong>{(myProfile?.score ?? 0) >= 200 ? (isZh ? "可用" : "Ready") : isZh ? "受限" : "Limited"}</strong>
                 </div>
               </div>
 
               <div className="button-row action-row">
-                <Link href={`/contracts?type=${suggestedLane.type}`} className="button primary">
-                  Find {suggestedLane.type === "deliver" ? "Delivery" : "Procure"} Orders
+                <Link href={localizePath(`/contracts?type=${suggestedLane.type}`, locale)} className="button primary">
+                  {isZh ? (suggestedLane.type === "deliver" ? "找运输单" : "找采购单") : `Find ${suggestedLane.type === "deliver" ? "Delivery" : "Procure"} Orders`}
                 </Link>
-                <Link href="/app/insurance" className="button secondary">
-                  Open Coverage
+                <Link href={localizePath("/app/insurance", locale)} className="button secondary">
+                  {isZh ? "打开保险页" : "Open Coverage"}
                 </Link>
-                <Link href="/opportunities#intel" className="button tertiary">
-                  Scan Intel
+                <Link href={localizePath("/opportunities#intel", locale)} className="button tertiary">
+                  {isZh ? "查看情报" : "Scan Intel"}
                 </Link>
               </div>
             </div>
@@ -224,20 +229,20 @@ export function ReputationPanel({
               {sortedPolicies.map((policy) => (
                 <article key={policy.tier} className="table-card compact-card">
                   <div className="table-card__header">
-                    <strong>{policy.label}</strong>
-                    <StatusBadge label={`${(policy.commissionBps / 100).toFixed(1)}% fee`} />
+                    <strong>{localizeTier(policy.label, locale)}</strong>
+                    <StatusBadge label={isZh ? `${(policy.commissionBps / 100).toFixed(1)}% 费率` : `${(policy.commissionBps / 100).toFixed(1)}% fee`} />
                   </div>
                   <div className="stats-grid">
                     <div className="side-block">
-                      <span className="eyebrow">Min score</span>
+                      <span className="eyebrow">{isZh ? "最低分数" : "Min score"}</span>
                       <strong>{policy.minScore}</strong>
                     </div>
                     <div className="side-block">
-                      <span className="eyebrow">Min bond</span>
+                      <span className="eyebrow">{isZh ? "最低质押" : "Min bond"}</span>
                       <strong>{formatMist(policy.minStakeMist)}</strong>
                     </div>
                     <div className="side-block">
-                      <span className="eyebrow">Max order</span>
+                      <span className="eyebrow">{isZh ? "订单上限" : "Max order"}</span>
                       <strong>{formatMist(policy.maxOrderValueMist)}</strong>
                     </div>
                   </div>
@@ -251,8 +256,8 @@ export function ReputationPanel({
       <section className="panel stack">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Leaderboard</p>
-            <h2>Top carriers</h2>
+            <p className="eyebrow">{isZh ? "排行榜" : "Leaderboard"}</p>
+            <h2>{isZh ? "头部承运人" : "Top carriers"}</h2>
           </div>
           {profiles.length > 5 ? (
             <button
@@ -260,7 +265,7 @@ export function ReputationPanel({
               className="button tertiary"
               onClick={() => setShowAll((current) => !current)}
             >
-              {showAll ? "Show top 5" : `Show all ${profiles.length}`}
+              {showAll ? (isZh ? "只看前 5 名" : "Show top 5") : isZh ? `查看全部 ${profiles.length} 人` : `Show all ${profiles.length}`}
             </button>
           ) : null}
         </div>
@@ -269,27 +274,27 @@ export function ReputationPanel({
           {visibleProfiles.map((profile, index) => (
             <article key={profile.owner} className="table-card leaderboard-row">
               <div className="leaderboard-row__rank">
-                <span className="eyebrow">Rank</span>
+                <span className="eyebrow">{isZh ? "排名" : "Rank"}</span>
                 <strong>#{index + 1}</strong>
               </div>
               <div className="leaderboard-row__carrier">
-                <span className="eyebrow">Carrier</span>
+                <span className="eyebrow">{isZh ? "承运人" : "Carrier"}</span>
                 <strong>{formatAddress(profile.owner)}</strong>
               </div>
               <div className="leaderboard-row__metric">
-                <span className="eyebrow">Tier</span>
-                <StatusBadge label={formatTierLabel(profile.tier)} />
+                <span className="eyebrow">{isZh ? "等级" : "Tier"}</span>
+                <StatusBadge label={localizeTier(formatTierLabel(profile.tier), locale)} />
               </div>
               <div className="leaderboard-row__metric">
-                <span className="eyebrow">Completion</span>
+                <span className="eyebrow">{isZh ? "完成率" : "Completion"}</span>
                 <strong>{getCompletionRate(profile)}%</strong>
               </div>
               <div className="leaderboard-row__metric">
-                <span className="eyebrow">Routes</span>
+                <span className="eyebrow">{isZh ? "完成航线" : "Routes"}</span>
                 <strong>{profile.successCount}</strong>
               </div>
               <div className="leaderboard-row__metric">
-                <span className="eyebrow">Fee Rate</span>
+                <span className="eyebrow">{isZh ? "费率" : "Fee Rate"}</span>
                 <strong>{feeRateForTier(profile.tier, sortedPolicies)}</strong>
               </div>
             </article>

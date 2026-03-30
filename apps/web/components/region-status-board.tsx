@@ -6,6 +6,7 @@ import {
   type Opportunity,
   type RegionStatus,
 } from "@eve/shared";
+import { localizePath, type AppLocale } from "../lib/i18n";
 
 function findOpportunity(regionName: string, opportunities: Opportunity[]) {
   return opportunities.find((opportunity) => opportunity.regionName === regionName);
@@ -14,18 +15,24 @@ function findOpportunity(regionName: string, opportunities: Opportunity[]) {
 export function RegionStatusBoard({
   regionStatuses,
   opportunities,
+  locale = "en",
 }: {
   regionStatuses: RegionStatus[];
   opportunities: Opportunity[];
+  locale?: AppLocale;
 }) {
+  const isZh = locale === "zh";
+  const localizeType = (type: "procure" | "deliver") =>
+    locale === "zh" ? (type === "deliver" ? "运输" : "采购") : contractTypeLabels[type];
+
   return (
     <section className="panel stack">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Region status</p>
-          <h2>Priority trade regions</h2>
+          <p className="eyebrow">{isZh ? "区域状态" : "Region status"}</p>
+          <h2>{isZh ? "重点贸易区域" : "Priority trade regions"}</h2>
         </div>
-        <span className="subtle">Region-level aggregation only</span>
+        <span className="subtle">{isZh ? "仅显示区域级聚合" : "Region-level aggregation only"}</span>
       </div>
       <div className="region-status-list">
         {regionStatuses.map((region) => {
@@ -40,7 +47,7 @@ export function RegionStatusBoard({
             <article key={region.id} className="status-card">
               <div className="opportunity-head">
                 <div>
-                  <p className="eyebrow">Region status</p>
+                  <p className="eyebrow">{isZh ? "区域状态" : "Region status"}</p>
                   <strong>{region.regionName}</strong>
                   <p className="opportunity-subtitle">{region.summary}</p>
                 </div>
@@ -48,32 +55,32 @@ export function RegionStatusBoard({
               </div>
               <dl className="score-grid">
                 <div>
-                  <dt>Combat</dt>
+                  <dt>{isZh ? "冲突" : "Combat"}</dt>
                   <dd>{region.combatActivity}</dd>
                 </div>
                 <div>
-                  <dt>Logistics</dt>
+                  <dt>{isZh ? "物流" : "Logistics"}</dt>
                   <dd>{region.logisticsStability}</dd>
                 </div>
                 <div>
-                  <dt>Resource pressure</dt>
+                  <dt>{isZh ? "资源压力" : "Resource pressure"}</dt>
                   <dd>{region.resourcePressure}</dd>
                 </div>
                 <div>
-                  <dt>Fleet activity</dt>
+                  <dt>{isZh ? "舰队活动" : "Fleet activity"}</dt>
                   <dd>{region.fleetActivity}</dd>
                 </div>
               </dl>
               <div className="card-footer">
                 <div className="card-footer__meta">
-                  <span className="eyebrow">Best action</span>
-                  <strong>{contractTypeLabels[suggestedType]}</strong>
+                  <span className="eyebrow">{isZh ? "推荐动作" : "Best action"}</span>
+                  <strong>{localizeType(suggestedType)}</strong>
                 </div>
                 <Link
-                  href={`/contracts?type=${suggestedType}&resource=${encodeURIComponent(region.dominantResource)}&region=${encodeURIComponent(region.regionName)}`}
+                  href={localizePath(`/contracts?type=${suggestedType}&resource=${encodeURIComponent(region.dominantResource)}&region=${encodeURIComponent(region.regionName)}`, locale)}
                   className="button secondary"
                 >
-                  Post order
+                  {isZh ? "创建订单" : "Post order"}
                 </Link>
               </div>
             </article>

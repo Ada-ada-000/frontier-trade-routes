@@ -3,37 +3,49 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { localizePath, type AppLocale } from "../lib/i18n";
 import { WalletPanel } from "./wallet-panel";
-
-const links = [
-  { href: "/app#overview", label: "Overview", match: "/app" },
-  { href: "/contracts#contracts", label: "Orders", match: "/contracts" },
-  { href: "/opportunities#intel", label: "Intel", match: "/opportunities" },
-  { href: "/app/reputation#reputation", label: "Reputation", match: "/app/reputation" },
-  { href: "/app/insurance#insurance", label: "Insurance", match: "/app/insurance" },
-];
 
 export function TopNav({
   compact = false,
   showMenuButton = true,
   onMenuToggle,
+  locale = "en",
 }: {
   compact?: boolean;
   showMenuButton?: boolean;
   onMenuToggle?: () => void;
+  locale?: AppLocale;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const overviewMatch = localizePath("/app", locale);
+  const links =
+    locale === "zh"
+      ? [
+          { href: localizePath("/app#overview", locale), label: "总览", match: localizePath("/app", locale) },
+          { href: localizePath("/contracts#contracts", locale), label: "订单", match: localizePath("/contracts", locale) },
+          { href: localizePath("/opportunities#intel", locale), label: "情报", match: localizePath("/opportunities", locale) },
+          { href: localizePath("/app/reputation#reputation", locale), label: "声誉", match: localizePath("/app/reputation", locale) },
+          { href: localizePath("/app/insurance#insurance", locale), label: "保险", match: localizePath("/app/insurance", locale) },
+        ]
+      : [
+          { href: "/app#overview", label: "Overview", match: "/app" },
+          { href: "/contracts#contracts", label: "Orders", match: "/contracts" },
+          { href: "/opportunities#intel", label: "Intel", match: "/opportunities" },
+          { href: "/app/reputation#reputation", label: "Reputation", match: "/app/reputation" },
+          { href: "/app/insurance#insurance", label: "Insurance", match: "/app/insurance" },
+        ];
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextQuery = query.trim();
     if (!nextQuery) {
-      router.push("/search");
+      router.push(localizePath("/search", locale));
       return;
     }
-    router.push(`/search?q=${encodeURIComponent(nextQuery)}`);
+    router.push(localizePath(`/search?q=${encodeURIComponent(nextQuery)}`, locale));
   }
 
   return (
@@ -47,7 +59,7 @@ export function TopNav({
               <span />
             </button>
           ) : null}
-          <Link href="/" className="brand-link">
+          <Link href={localizePath("/", locale)} className="brand-link">
             <span className="brand-mark">FT</span>
             <span className="brand-copy">
               <strong>Frontier Trade Routes</strong>
@@ -68,35 +80,29 @@ export function TopNav({
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search"
-              aria-label="Search"
+              placeholder={locale === "zh" ? "搜索区域或资源" : "Search"}
+              aria-label={locale === "zh" ? "搜索" : "Search"}
             />
           </form>
 
-          <nav className="top-nav__links desktop-only">
-            {links.map((link) => {
-              const active =
-                pathname === link.match || (link.match !== "/app" && pathname.startsWith(link.match));
-              return (
-                <Link key={link.href} href={link.href} className={`top-nav__link ${active ? "is-active" : ""}`}>
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+          {links.map((link) => {
+            const active =
+              pathname === link.match || (link.match !== overviewMatch && pathname.startsWith(link.match));
+            return (
+              <Link key={link.href} href={link.href} className={`top-nav__link desktop-only ${active ? "is-active" : ""}`}>
+                {link.label}
+              </Link>
+            );
+          })}
 
-        <div className="top-nav__right">
-          <div className="network-pill desktop-only">
-            <span className="status-dot online pulse" />
-            <span>Online</span>
+          <div className="top-nav__wallet desktop-only">
+            <WalletPanel compact={compact} locale={locale} />
           </div>
-          <WalletPanel compact={compact} />
         </div>
       </div>
       <div className="top-nav__mobile-row mobile-only">
         <div className="top-nav__right">
-          <WalletPanel compact={compact} />
+          <WalletPanel compact={compact} locale={locale} />
         </div>
       </div>
     </header>

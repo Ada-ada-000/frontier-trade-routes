@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { type IntelEvent, type Opportunity, type RegionStatus } from "@eve/shared";
+import { type AppLocale } from "../lib/i18n";
 
-function threatDescriptor(level: number) {
-  if (level >= 2) return { label: "High", tone: "🔴" };
-  if (level === 1) return { label: "Elevated", tone: "🟡" };
-  return { label: "Stable", tone: "🟢" };
+function threatDescriptor(level: number, locale: AppLocale) {
+  if (level >= 2) return { label: locale === "zh" ? "高风险" : "High", tone: "🔴" };
+  if (level === 1) return { label: locale === "zh" ? "偏高" : "Elevated", tone: "🟡" };
+  return { label: locale === "zh" ? "稳定" : "Stable", tone: "🟢" };
 }
 
 function findHighestOpportunity(opportunities: Opportunity[]) {
@@ -32,35 +33,48 @@ export function IntelSummary({
   regionStatuses,
   intelEvents,
   action,
+  locale = "en",
 }: {
   opportunities: Opportunity[];
   regionStatuses: RegionStatus[];
   intelEvents: IntelEvent[];
   action?: ReactNode;
+  locale?: AppLocale;
 }) {
+  const isZh = locale === "zh";
   const highestOpportunity = findHighestOpportunity(opportunities);
   const highestRisk = findHighestRisk(regionStatuses);
   const criticalCount = intelEvents.filter((event) => event.riskLevel === "critical").length;
-  const threat = threatDescriptor(criticalCount);
+  const threat = threatDescriptor(criticalCount, locale);
   const nextMove = highestOpportunity
-    ? `Watch ${highestOpportunity.regionName} for ${highestOpportunity.resourceName}`
-    : "Watch the busiest region";
+    ? isZh
+      ? `盯住 ${highestOpportunity.regionName} 的 ${highestOpportunity.resourceName}`
+      : `Watch ${highestOpportunity.regionName} for ${highestOpportunity.resourceName}`
+    : isZh
+      ? "先关注当前最热区域"
+      : "Watch the busiest region";
 
   const cards = [
     {
-      label: "Best region",
+      label: isZh ? "最佳区域" : "Best region",
       value: highestOpportunity?.regionName ?? "—",
-      note: highestOpportunity ? highestOpportunity.resourceName : "No live route",
+      note: highestOpportunity ? highestOpportunity.resourceName : isZh ? "暂无活跃航线" : "No live route",
     },
     {
-      label: "Risk check",
+      label: isZh ? "风险状态" : "Risk check",
       value: `${threat.tone} ${threat.label}`,
-      note: `${intelEvents.length} live signals`,
+      note: isZh ? `${intelEvents.length} 条有效信号` : `${intelEvents.length} live signals`,
     },
     {
-      label: "Next move",
+      label: isZh ? "下一步" : "Next move",
       value: nextMove,
-      note: highestRisk ? `Combat highest in ${highestRisk.regionName}` : "Market is quiet",
+      note: highestRisk
+        ? isZh
+          ? `${highestRisk.regionName} 的冲突压力最高`
+          : `Combat highest in ${highestRisk.regionName}`
+        : isZh
+          ? "当前市场较平静"
+          : "Market is quiet",
     },
   ];
 
@@ -68,8 +82,8 @@ export function IntelSummary({
     <section className="panel stack intel-summary-panel" id="intel">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Frontier Intel</p>
-          <h2>Find the next profitable route</h2>
+          <p className="eyebrow">{isZh ? "边境情报" : "Frontier Intel"}</p>
+          <h2>{isZh ? "先看哪里值得出手" : "Find the next route"}</h2>
         </div>
         {action}
       </div>
@@ -81,14 +95,6 @@ export function IntelSummary({
             <span className="subtle">{card.note}</span>
           </article>
         ))}
-      </div>
-      <div className="quick-guide">
-        <div className="quick-guide__copy">
-          <strong>Use this page to decide where to post or take the next run.</strong>
-          <p className="muted">
-            Start with the strongest region card, then open details only for reports you want to act on.
-          </p>
-        </div>
       </div>
     </section>
   );

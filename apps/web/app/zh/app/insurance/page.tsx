@@ -1,8 +1,8 @@
-import { AppShell } from "../../../components/app-shell";
-import { InsurancePanel } from "../../../components/trade-routes/insurance-panel";
-import { getTradeRoutesSnapshot } from "../../../lib/trade-routes/server-data";
+import { AppShell } from "../../../../components/app-shell";
+import { InsurancePanel } from "../../../../components/trade-routes/insurance-panel";
+import { getTradeRoutesSnapshot } from "../../../../lib/trade-routes/server-data";
 
-export default async function InsurancePage({
+export default async function InsurancePageZh({
   searchParams,
 }: {
   searchParams?: Promise<{ view?: string; covered?: string }>;
@@ -15,11 +15,12 @@ export default async function InsurancePage({
       : "needs";
 
   return (
-    <AppShell>
+    <AppShell locale="zh">
       <InsurancePanel
         insurancePool={snapshot.insurancePool}
         orders={snapshot.orders}
         commissionScheduleBps={snapshot.commissionScheduleBps}
+        locale="zh"
         initialView={view}
         coveredOrderId={params.covered}
       />

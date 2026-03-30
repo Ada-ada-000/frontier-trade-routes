@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ContractFormInput, ContractType } from "@eve/shared";
+import { type AppLocale } from "../lib/i18n";
 import { useTradeRoutes } from "../lib/trade-routes-context";
 
 function defaultExpirationInput() {
@@ -39,11 +40,14 @@ export function ContractForm({
   initialType,
   initialResource,
   initialRegion,
+  locale = "en",
 }: {
   initialType?: ContractType;
   initialResource?: string;
   initialRegion?: string;
+  locale?: AppLocale;
 }) {
+  const isZh = locale === "zh";
   const { createContract, feedback, busy } = useTradeRoutes();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState<ContractFormInput>(
@@ -66,17 +70,17 @@ export function ContractForm({
     <section className="panel stack">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Post Order</p>
-          <h2>Create a route request</h2>
+          <p className="eyebrow">{isZh ? "发布订单" : "Post Order"}</p>
+          <h2>{isZh ? "创建一条航线需求" : "Create a route request"}</h2>
         </div>
       </div>
       <form className="form-grid" onSubmit={onSubmit}>
         <div className="full-width">
-          <span>Order type</span>
+          <span>{isZh ? "订单类型" : "Order type"}</span>
           <div className="toggle-grid">
             {([
-              ["procure", "📥 Procure", "Source a resource into a market"],
-              ["deliver", "📤 Deliver", "Move cargo into a target region"],
+              ["procure", isZh ? "📥 采购" : "📥 Procure", isZh ? "把资源补进目标市场" : "Source a resource into a market"],
+              ["deliver", isZh ? "📤 运输" : "📤 Deliver", isZh ? "把货物送到指定区域" : "Move cargo into a target region"],
             ] as const).map(([value, label, note]) => (
               <button
                 key={value}
@@ -91,15 +95,15 @@ export function ContractForm({
           </div>
         </div>
         <label>
-          <span>Resource</span>
+          <span>{isZh ? "资源" : "Resource"}</span>
           <input
             value={form.resource}
             onChange={(event) => updateField("resource", event.target.value)}
-            placeholder="Rare Alloy · try O3H-1FN or EH1-FQC"
+            placeholder={isZh ? "例如 Rare Alloy，可填 O3H-1FN 或 EH1-FQC" : "Rare Alloy · try O3H-1FN or EH1-FQC"}
           />
         </label>
         <label>
-          <span>Quantity</span>
+          <span>{isZh ? "数量" : "Quantity"}</span>
           <input
             type="number"
             min="1"
@@ -108,15 +112,15 @@ export function ContractForm({
           />
         </label>
         <label>
-          <span>Target region</span>
+          <span>{isZh ? "目标区域" : "Target region"}</span>
           <input
             value={form.targetRegion}
             onChange={(event) => updateField("targetRegion", event.target.value)}
-            placeholder="O3H-1FN · hotspot routes suggest EH1-FQC"
+            placeholder={isZh ? "例如 O3H-1FN，热点线路可参考 EH1-FQC" : "O3H-1FN · hotspot routes suggest EH1-FQC"}
           />
         </label>
         <label>
-          <span>Reward (SUI)</span>
+          <span>{isZh ? "奖励（SUI）" : "Reward (SUI)"}</span>
           <input
             type="number"
             min="1"
@@ -130,13 +134,13 @@ export function ContractForm({
             className="accordion-toggle"
             onClick={() => setShowAdvanced((current) => !current)}
           >
-            <span>Advanced Settings</span>
+            <span>{isZh ? "高级设置" : "Advanced Settings"}</span>
             <span>{showAdvanced ? "−" : "+"}</span>
           </button>
           {showAdvanced ? (
             <div className="accordion-content">
               <label>
-                <span>Bond</span>
+                <span>{isZh ? "质押" : "Bond"}</span>
                 <input
                   type="number"
                   min="0"
@@ -145,7 +149,7 @@ export function ContractForm({
                 />
               </label>
               <label>
-                <span>Deadline</span>
+                <span>{isZh ? "截止时间" : "Deadline"}</span>
                 <input
                   type="datetime-local"
                   value={form.expirationTimestamp}
@@ -156,7 +160,7 @@ export function ContractForm({
           ) : null}
         </div>
         <button type="submit" className="button primary" disabled={busy}>
-          {busy ? "Posting..." : "Post Order"}
+          {busy ? (isZh ? "发布中..." : "Posting...") : isZh ? "发布订单" : "Post Order"}
         </button>
       </form>
       {feedback.message ? (

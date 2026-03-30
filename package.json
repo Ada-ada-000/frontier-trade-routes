@@ -8,6 +8,7 @@
     "lint": "pnpm --filter web lint",
     "typecheck": "pnpm -r typecheck",
     "move:build": "cd contracts/trade_routes && sui move build",
-    "simulate:trade-routes": "node scripts/simulate-trade-routes.mjs"
+    "simulate:trade-routes": "node scripts/simulate-trade-routes.mjs",
+    "seed:testnet": "node scripts/seed-testnet-trade-routes.mjs"
   }
 }
