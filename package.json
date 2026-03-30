@@ -9,6 +9,7 @@
     "typecheck": "pnpm -r typecheck",
     "move:build": "cd contracts/trade_routes && sui move build",
     "simulate:trade-routes": "node scripts/simulate-trade-routes.mjs",
-    "seed:testnet": "node scripts/seed-testnet-trade-routes.mjs"
+    "seed:testnet": "node scripts/seed-testnet-trade-routes.mjs",
+    "seed:testnet:initial": "node scripts/seed-testnet-trade-routes.mjs --initial"
   }
 }

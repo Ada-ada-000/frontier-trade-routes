@@ -11,6 +11,8 @@ const KEYSTORE_PATH = path.join(os.homedir(), ".sui/sui_config/sui.keystore");
 const CLOCK_OBJECT_ID = "0x6";
 
 const client = new SuiClient({ url: getFullnodeUrl("testnet") });
+const args = new Set(process.argv.slice(2));
+const initialOnly = args.has("--initial") || args.has("--reset-initial");
 
 const ORDER_TEMPLATES = [
   {
@@ -374,6 +376,7 @@ async function main() {
   const seller = readKeypair(1);
 
   console.log("Seeding Frontier Trade Routes on Sui testnet");
+  console.log(`mode: ${initialOnly ? "initial-only" : "full-demo"}`);
   console.log(`buyer:  ${buyer.toSuiAddress()}`);
   console.log(`seller: ${seller.toSuiAddress()}`);
   console.log(`package: ${config.packageId}`);
@@ -399,76 +402,84 @@ async function main() {
     console.log(`Active orders already seeded (${activeOrders.length}), skipping create_order.`);
   }
 
-  const hasAssignedOrTransit = orders.some(
-    (order) =>
-      (order.status === 1 || order.status === 2) &&
-      order.seller.toLowerCase() === seller.toSuiAddress().toLowerCase(),
-  );
-
-  if (!hasAssignedOrTransit) {
-    const openCandidate = orders.find(
+  if (!initialOnly) {
+    const hasAssignedOrTransit = orders.some(
       (order) =>
-        order.status === 0 &&
-        (order.seller === "0x0" || order.seller === "") &&
-        order.requiredStakeAmount <= 45_000_000n,
+        (order.status === 1 || order.status === 2) &&
+        order.seller.toLowerCase() === seller.toSuiAddress().toLowerCase(),
     );
 
-    if (openCandidate) {
-      const quotedPriceMist = openCandidate.rewardBudget > 5_000_000n ? openCandidate.rewardBudget - 5_000_000n : openCandidate.rewardBudget;
+    if (!hasAssignedOrTransit) {
+      const openCandidate = orders.find(
+        (order) =>
+          order.status === 0 &&
+          (order.seller === "0x0" || order.seller === "") &&
+          order.requiredStakeAmount <= 45_000_000n,
+      );
+
+      if (openCandidate) {
+        const quotedPriceMist = openCandidate.rewardBudget > 5_000_000n ? openCandidate.rewardBudget - 5_000_000n : openCandidate.rewardBudget;
+        await signAndWait(
+          `accept-order:${openCandidate.orderId}`,
+          seller,
+          buildAcceptOrderTx(
+            config,
+            openCandidate.orderId,
+            quotedPriceMist,
+            openCandidate.requiredStakeAmount,
+          ),
+        );
+        orders = await loadOrders(config);
+      }
+    }
+
+    const pickupCandidate = orders.find(
+      (order) =>
+        order.status === 1 &&
+        order.stage === 1 &&
+        order.seller.toLowerCase() === seller.toSuiAddress().toLowerCase(),
+    );
+    if (pickupCandidate) {
       await signAndWait(
-        `accept-order:${openCandidate.orderId}`,
+        `confirm-pickup:${pickupCandidate.orderId}`,
         seller,
-        buildAcceptOrderTx(
-          config,
-          openCandidate.orderId,
-          quotedPriceMist,
-          openCandidate.requiredStakeAmount,
-        ),
+        buildConfirmPickupTx(config, pickupCandidate.orderId),
       );
       orders = await loadOrders(config);
     }
-  }
-
-  const pickupCandidate = orders.find(
-    (order) =>
-      order.status === 1 &&
-      order.stage === 1 &&
-      order.seller.toLowerCase() === seller.toSuiAddress().toLowerCase(),
-  );
-  if (pickupCandidate) {
-    await signAndWait(
-      `confirm-pickup:${pickupCandidate.orderId}`,
-      seller,
-      buildConfirmPickupTx(config, pickupCandidate.orderId),
-    );
-    orders = await loadOrders(config);
+  } else {
+    console.log("Initial-only mode: skip accept/pickup demo actions.");
   }
 
   let intelReports = await loadIntelReports(config);
-  if (intelReports.length === 0) {
-    const firstOrderId = orders[0]?.orderId ?? 1n;
-    const submitResult = await signAndWait(
-      "submit-intel",
-      buyer,
-      buildSubmitIntelTx(config, {
-        orderHint: firstOrderId,
-        region: "The Forge",
-        signalKind: 1,
-        confidenceBps: 8_400,
-        commitment: "forge-demand-window-1",
-      }),
-    );
+  if (!initialOnly) {
+    if (intelReports.length === 0) {
+      const firstOrderId = orders[0]?.orderId ?? 1n;
+      const submitResult = await signAndWait(
+        "submit-intel",
+        buyer,
+        buildSubmitIntelTx(config, {
+          orderHint: firstOrderId,
+          region: "The Forge",
+          signalKind: 1,
+          confidenceBps: 8_400,
+          commitment: "forge-demand-window-1",
+        }),
+      );
 
-    const intelSubmittedEvent = submitResult.events?.find((event) => event.type.endsWith("::intel::IntelSubmitted"));
-    const reportId = BigInt(stringValue(intelSubmittedEvent?.parsedJson?.report_id) || "0");
-    if (reportId > 0n) {
-      await signAndWait("support-intel", seller, buildIntelActionTx(config, "support_report", reportId));
-      await signAndWait("link-intel-evidence", buyer, buildIntelActionTx(config, "link_order_evidence", reportId));
-      await signAndWait("verify-intel", buyer, buildVerifyIntelTx(config, reportId, true));
+      const intelSubmittedEvent = submitResult.events?.find((event) => event.type.endsWith("::intel::IntelSubmitted"));
+      const reportId = BigInt(stringValue(intelSubmittedEvent?.parsedJson?.report_id) || "0");
+      if (reportId > 0n) {
+        await signAndWait("support-intel", seller, buildIntelActionTx(config, "support_report", reportId));
+        await signAndWait("link-intel-evidence", buyer, buildIntelActionTx(config, "link_order_evidence", reportId));
+        await signAndWait("verify-intel", buyer, buildVerifyIntelTx(config, reportId, true));
+      }
+      intelReports = await loadIntelReports(config);
+    } else {
+      console.log(`Intel reports already seeded (${intelReports.length}), skipping submit_report.`);
     }
-    intelReports = await loadIntelReports(config);
   } else {
-    console.log(`Intel reports already seeded (${intelReports.length}), skipping submit_report.`);
+    console.log("Initial-only mode: skip intel demo actions.");
   }
 
   const insurancePoolObject = await loadInsurancePool(config);

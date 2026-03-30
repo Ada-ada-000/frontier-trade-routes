@@ -175,6 +175,11 @@ function stringValue(input: unknown) {
   return "";
 }
 
+function isZeroAddress(input: string) {
+  const normalized = input.trim().toLowerCase();
+  return normalized === "0x0" || /^0x0+$/.test(normalized);
+}
+
 function bigintString(input: unknown) {
   if (typeof input === "string") {
     return input;
@@ -276,7 +281,10 @@ function parseOrderObject(object: SuiObjectResponse): OrderPublicView | null {
   return {
     orderId: bigintString(value.order_id),
     buyer: stringValue(value.buyer),
-    seller: stringValue(value.seller) === "0x0" ? undefined : stringValue(value.seller),
+    seller: (() => {
+      const seller = stringValue(value.seller);
+      return isZeroAddress(seller) ? undefined : seller;
+    })(),
     orderMode: numberValue(value.order_mode) === 0 ? "urgent" : "competitive",
     status:
       numberValue(value.status) === 0

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { FormEvent, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { localizePath, type AppLocale } from "../lib/i18n";
@@ -60,7 +61,9 @@ export function TopNav({
             </button>
           ) : null}
           <Link href={localizePath("/", locale)} className="brand-link">
-            <span className="brand-mark">FT</span>
+            <span className="brand-mark brand-mark--image" aria-hidden="true">
+              <Image src="/assets/ftr-logo.png" alt="" width={54} height={54} className="brand-mark__image" priority />
+            </span>
             <span className="brand-copy">
               <strong>Frontier Trade Routes</strong>
               <small>EVE Frontier x Sui</small>
