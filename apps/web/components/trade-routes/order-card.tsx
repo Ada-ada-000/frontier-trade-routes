@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { localizePath, type AppLocale } from "../../lib/i18n";
 import {
   formatMist,
   formatStatus,
@@ -78,7 +79,7 @@ export function OrderCard({
 }: {
   order: OrderPublicView;
   walletConnected: boolean;
-  locale?: "en" | "zh";
+  locale?: AppLocale;
   onAccept(order: OrderPublicView): void;
 }) {
   const router = useRouter();
@@ -91,7 +92,7 @@ export function OrderCard({
       return;
     }
 
-    router.push("/contracts#contracts");
+    router.push(localizePath("/contracts#contracts", locale));
   }
 
   const actionLabel = !walletConnected
