@@ -155,7 +155,9 @@ dd {
   flex-direction: column;
   justify-content: center;
   gap: 4px;
-  min-height: 54px;
+  height: 54px;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .brand-copy strong {
@@ -164,13 +166,13 @@ dd {
   font-size: 1rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  line-height: 1.1;
+  line-height: 1;
 }
 
 .brand-copy small {
   display: block;
   color: rgba(245, 121, 32, 0.82);
-  line-height: 1.1;
+  line-height: 1;
 }
 
 .top-nav {
@@ -293,7 +295,9 @@ dd {
 
 .brand-link {
   align-items: center;
-  min-height: 54px;
+  height: 54px;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .top-nav__search input::placeholder {
